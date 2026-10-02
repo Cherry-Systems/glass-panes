@@ -1,6 +1,6 @@
 """Renders the SDDM theme with mock sddm/userModel objects.
 
-    QT_QPA_PLATFORM=offscreen build/venv/bin/python3 tests/sddm_preview.py OUT.png [signin]
+    QT_QPA_PLATFORM=offscreen build/venv/bin/python3 tests/sddm_preview.py OUT.png [signin] [PROP=VALUE ...]
 """
 import os
 import sys
@@ -113,6 +113,12 @@ def main():
     view.show()
     if "signin" in sys.argv:
         QTimer.singleShot(300, lambda: view.rootObject().showSignIn())
+    # Extra arguments NAME=VALUE set properties on the theme, e.g. flyout=access magnify=true.
+    for arg in sys.argv[2:]:
+        if "=" in arg:
+            name, value = arg.split("=", 1)
+            value = {"true": True, "false": False}.get(value, value)
+            QTimer.singleShot(400, lambda n=name, v=value: view.rootObject().setProperty(n, v))
     QTimer.singleShot(1500, lambda: (view.grabWindow().save(sys.argv[1]), app.quit()))
     app.exec()
 

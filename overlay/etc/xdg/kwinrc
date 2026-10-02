@@ -32,6 +32,7 @@ Rows=1
 blurEnabled=true
 contrastEnabled=true
 shakecursorEnabled=false
+startupfeedbackEnabled=false
 zoomEnabled=true
 
 [Compositing]

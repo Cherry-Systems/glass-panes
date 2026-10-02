@@ -12,7 +12,23 @@ Item {
     property int sessionIndex: sessionModel.lastIndex >= 0 ? sessionModel.lastIndex : 0
     property color textColor: "white"
     property string fontFamily: config.font || "Selawik"
-    property real unit: Math.max(0.75, Math.min(height / 1080, width / 1920))
+    property string flyout: ""  // "network", "access" or "power"
+    property bool magnify: false
+    property bool highContrast: false
+    property bool osk: false
+    property real unit: Math.max(0.75, Math.min(height / 1080, width / 1920)) * (magnify ? 1.5 : 1)
+
+    onOskChanged: {
+        if (keyboardLoader.item)
+            keyboardLoader.item.activated = osk
+        if (osk) {
+            showSignIn()
+            password.forceActiveFocus()
+            Qt.inputMethod.show()
+        } else {
+            Qt.inputMethod.hide()
+        }
+    }
 
     function showSignIn() {
         if (!signingIn) {
@@ -54,6 +70,11 @@ Item {
         fillMode: Image.PreserveAspectCrop
         opacity: root.signingIn ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+    }
+    Rectangle {
+        anchors.fill: parent
+        visible: root.highContrast
+        color: "black"
     }
 
     Timer {
@@ -103,7 +124,9 @@ Item {
         id: signInView
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: root.signingIn ? -40 * root.unit : 60 * root.unit
+        anchors.verticalCenterOffset: !root.signingIn ? 60 * root.unit
+                                    : keyboardHeight > 0 ? -keyboardHeight / 2 : -40 * root.unit
+        readonly property real keyboardHeight: keyboardLoader.item && keyboardLoader.item.visible ? keyboardLoader.item.height : 0
         opacity: root.signingIn ? 1 : 0
         visible: root.signingIn || opacity > 0  // visible at once, so the password box can take focus
         spacing: 18 * root.unit
@@ -173,8 +196,9 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: 4
-                color: password.activeFocus ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.7)
-                border.color: Qt.rgba(0, 0, 0, 0.1)
+                color: password.activeFocus || root.highContrast ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.7)
+                border.color: root.highContrast ? "#ffff00" : Qt.rgba(0, 0, 0, 0.1)
+                border.width: root.highContrast ? 2 : 1
                 Rectangle {
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
@@ -200,7 +224,14 @@ Item {
                 focus: root.signingIn
                 Keys.onReturnPressed: root.login()
                 Keys.onEnterPressed: root.login()
-                Keys.onEscapePressed: { root.signingIn = false; text = "" }
+                Keys.onEscapePressed: {
+                    if (root.flyout !== "")
+                        root.flyout = ""
+                    else {
+                        root.signingIn = false
+                        text = ""
+                    }
+                }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: !parent.text
@@ -328,6 +359,13 @@ Item {
     }
 
     // ---- network / accessibility / power (bottom right) --------------------------------------------
+    // A click anywhere else closes the open flyout.
+    MouseArea {
+        anchors.fill: parent
+        visible: root.flyout !== ""
+        onClicked: root.flyout = ""
+    }
+
     Row {
         id: corner
         anchors.right: parent.right
@@ -350,7 +388,93 @@ Item {
                 }
                 MouseArea {
                     id: btnArea; anchors.fill: parent; hoverEnabled: true
-                    onClicked: if (modelData === "power") powerMenu.visible = !powerMenu.visible
+                    onClicked: {
+                        var name = { wifi: "network", accessibility: "access", power: "power" }[modelData]
+                        root.flyout = root.flyout === name ? "" : name
+                    }
+                }
+            }
+        }
+    }
+
+    Loader {
+        id: networkLoader
+        anchors.right: corner.right
+        anchors.bottom: corner.top
+        anchors.bottomMargin: 8
+        active: root.flyout === "network"
+        source: "NetworkFlyout.qml"
+    }
+    Rectangle {
+        visible: networkLoader.active && networkLoader.status === Loader.Error
+        anchors.right: corner.right
+        anchors.bottom: corner.top
+        anchors.bottomMargin: 8
+        width: 360 * root.unit
+        height: 56 * root.unit
+        radius: 8
+        color: "#f9f9f9"
+        border.color: Qt.rgba(0, 0, 0, 0.1)
+        Text {
+            anchors.centerIn: parent
+            text: "Network settings aren't available right now."
+            color: "#1a1a1a"
+            font.family: root.fontFamily
+            font.pixelSize: 13 * root.unit
+        }
+    }
+
+    Rectangle {
+        id: accessMenu
+        visible: root.flyout === "access"
+        anchors.right: corner.right
+        anchors.bottom: corner.top
+        anchors.bottomMargin: 8
+        width: 300 * root.unit
+        height: accessCol.height + 16 * root.unit
+        radius: 8
+        color: "#f9f9f9"
+        border.color: Qt.rgba(0, 0, 0, 0.1)
+        Column {
+            id: accessCol
+            anchors.centerIn: parent
+            width: parent.width - 16 * root.unit
+            Repeater {
+                model: [
+                    { label: "Magnifier", icon: "zoom_in", key: "magnify" },
+                    { label: "On-screen keyboard", icon: "keyboard", key: "osk" },
+                    { label: "Contrast themes", icon: "dark_theme", key: "highContrast" }
+                ]
+                Rectangle {
+                    readonly property bool on: root[modelData.key]
+                    width: accessCol.width
+                    height: 44 * root.unit
+                    radius: 4
+                    color: accessArea.containsMouse ? "#ebebeb" : "transparent"
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12 * root.unit
+                        spacing: 12 * root.unit
+                        Image { anchors.verticalCenter: parent.verticalCenter; width: 18 * root.unit; height: width; source: "icons/" + modelData.icon + "-dark.svg"; sourceSize: Qt.size(36, 36) }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.label; color: "#1a1a1a"; font.family: root.fontFamily; font.pixelSize: 14 * root.unit }
+                    }
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12 * root.unit
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 40 * root.unit; height: 20 * root.unit; radius: height / 2
+                        color: parent.on ? "#0067c0" : "transparent"
+                        border.color: parent.on ? "#0067c0" : "#5f5f5f"
+                        Rectangle {
+                            width: 12 * root.unit; height: width; radius: width / 2
+                            anchors.verticalCenter: parent.verticalCenter
+                            x: parent.parent.on ? parent.width - width - 4 * root.unit : 4 * root.unit
+                            color: parent.parent.on ? "white" : "#5f5f5f"
+                            Behavior on x { NumberAnimation { duration: 120 } }
+                        }
+                    }
+                    MouseArea { id: accessArea; anchors.fill: parent; hoverEnabled: true; onClicked: root[modelData.key] = !parent.on }
                 }
             }
         }
@@ -358,7 +482,7 @@ Item {
 
     Rectangle {
         id: powerMenu
-        visible: false
+        visible: root.flyout === "power"
         anchors.right: corner.right
         anchors.bottom: corner.top
         anchors.bottomMargin: 8
@@ -391,15 +515,26 @@ Item {
                         Image { width: 16 * root.unit; height: width; source: "icons/" + modelData.icon + "-dark.svg"; sourceSize: Qt.size(32, 32) }
                         Text { text: modelData.label; color: "#1a1a1a"; font.family: root.fontFamily; font.pixelSize: 14 * root.unit }
                     }
-                    MouseArea { id: itemArea; anchors.fill: parent; hoverEnabled: true; onClicked: { powerMenu.visible = false; modelData.act() } }
+                    MouseArea { id: itemArea; anchors.fill: parent; hoverEnabled: true; onClicked: { root.flyout = ""; modelData.act() } }
                 }
             }
         }
     }
 
+    Loader {
+        id: keyboardLoader
+        width: Math.min(parent.width, 900 * root.unit)
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        source: "VirtualKeyboard.qml"
+    }
+
     focus: true
     Keys.onPressed: function(event) {
-        if (!root.signingIn) {
+        if (event.key === Qt.Key_Escape && root.flyout !== "") {
+            root.flyout = ""
+            event.accepted = true
+        } else if (!root.signingIn) {
             root.showSignIn()
             if (event.text.length > 0 && event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter
                     && event.key !== Qt.Key_Space && event.key !== Qt.Key_Escape)

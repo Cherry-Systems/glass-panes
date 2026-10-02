@@ -1,0 +1,7 @@
+[BusyCursorSettings]
+Bouncing=false
+Blinking=false
+
+[FeedbackStyle]
+BusyCursor=false
+TaskbarButton=false

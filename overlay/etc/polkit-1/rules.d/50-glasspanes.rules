@@ -14,3 +14,10 @@ polkit.addRule(function(action, subject) {
         id === "org.freedesktop.packagekit.system-sources-refresh")
         return polkit.Result.YES;
 });
+
+// The sign-in screen's Wi-Fi button: a network joined there is saved for every account, as on Windows.
+polkit.addRule(function(action, subject) {
+    if (subject.user === "sddm" && subject.local && subject.active &&
+        action.id.indexOf("org.freedesktop.NetworkManager.") === 0)
+        return polkit.Result.YES;
+});

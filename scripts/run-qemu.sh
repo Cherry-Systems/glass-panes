@@ -43,6 +43,9 @@ mkdir -p "$VM_DIR"
 # The USB tablet lets the pointer move in and out of the window without being grabbed.
 gpu=virtio-vga
 [[ $gl == yes ]] && gpu=virtio-vga-gl
+# In a window, virtio follows the window size, and odd widths come out skewed. Standard VGA keeps
+# 1600x900 and the window scales it.
+[[ $headless == no && $gl == no ]] && gpu=VGA
 args=(-machine q35 -m 4G -smp 4 -vga none -device "$gpu,xres=1600,yres=900"
       -device qemu-xhci -device usb-tablet -device intel-hda -device hda-duplex
       -name "$OS_NAME" -qmp "unix:$VM_DIR/qmp.sock,server=on,wait=off")
