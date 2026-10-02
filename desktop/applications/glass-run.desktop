@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Run
+Comment=Open a program, folder, document or website by typing its name
+Keywords=run;command;execute;
+Exec=glass-shell run
+Icon=system-run
+Categories=System;
+StartupNotify=false
+X-KDE-Shortcuts=Meta+R

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Search
+Comment=Search apps, settings and files
+Exec=glass-shell search
+Icon=glasspanes-search
+NoDisplay=true
+StartupNotify=false
+X-KDE-Shortcuts=Meta+S

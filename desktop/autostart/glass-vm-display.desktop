@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Virtual machine display resize
+Exec=/usr/libexec/glasspanes/vm-display
+NoDisplay=true
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=2

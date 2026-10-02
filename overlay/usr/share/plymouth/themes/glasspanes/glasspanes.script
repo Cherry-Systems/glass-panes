@@ -1,0 +1,87 @@
+# Glass Panes boot screen, laid out like Windows: the logo a little above centre on black, and
+# five white dots chasing each other round a circle near the bottom.
+# logo.png and dot.png are drawn by scripts/make-artwork.py.
+
+Window.SetBackgroundTopColor(0, 0, 0);
+Window.SetBackgroundBottomColor(0, 0, 0);
+
+screen_w = Window.GetWidth();
+screen_h = Window.GetHeight();
+
+logo_size = Math.Int(Math.Min(screen_w, screen_h) * 0.2);
+logo_image = Image("logo.png").Scale(logo_size, logo_size);
+logo = Sprite(logo_image);
+logo.SetPosition(screen_w / 2 - logo_size / 2, screen_h * 0.40 - logo_size / 2, 1);
+
+dot_size = Math.Int(Math.Max(5, screen_h * 0.0075));
+dot_image = Image("dot.png").Scale(dot_size, dot_size);
+radius = screen_h * 0.022;
+spin_cx = screen_w / 2;
+spin_cy = screen_h * 0.75;
+
+ndots = 5;
+for (i = 0; i < ndots; i = i + 1) {
+  dots[i] = Sprite(dot_image);
+  dots[i].SetZ(2);
+  dots[i].SetOpacity(0);
+}
+
+frame = 0;
+period = 110;   # frames per lap (Plymouth refreshes at ~50 fps)
+
+fun ease(p) {
+  # Slow at the top of the circle, fast through the bottom, like the Windows spinner.
+  if (p < 0.5) {
+    return 2 * p * p;
+  }
+  return 1 - ((-2 * p + 2) * (-2 * p + 2)) / 2;
+}
+
+fun refresh_callback() {
+  global.frame = global.frame + 1;
+  t = (global.frame % 154) / global.period;
+  global.logo.SetOpacity(Math.Min(global.frame / 30, 1));
+  for (i = 0; i < global.ndots; i = i + 1) {
+    p = t - i * 0.07;
+    if (p < 0 || p > 1) {
+      global.dots[i].SetOpacity(0);
+    } else {
+      a = ease(p) * 2 * Math.Pi - Math.Pi / 2;
+      global.dots[i].SetPosition(global.spin_cx + Math.Cos(a) * global.radius - global.dot_size / 2,
+                                 global.spin_cy + Math.Sin(a) * global.radius - global.dot_size / 2, 2);
+      global.dots[i].SetOpacity(1);
+    }
+  }
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+fun centred_text(text, y) {
+  image = Image.Text(text, 1, 1, 1);
+  sprite = Sprite(image);
+  sprite.SetPosition(global.screen_w / 2 - image.GetWidth() / 2, y, 10);
+  return sprite;
+}
+
+fun display_password_callback(prompt, bullets) {
+  stars = "";
+  for (i = 0; i < bullets; i = i + 1) {
+    stars = stars + "*";
+  }
+  if (stars == "") {
+    stars = " ";
+  }
+  global.prompt_sprite = centred_text(prompt, global.screen_h * 0.62);
+  global.bullet_sprite = centred_text(stars, global.screen_h * 0.62 + 30);
+}
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+fun display_normal_callback() {
+  global.prompt_sprite.SetOpacity(0);
+  global.bullet_sprite.SetOpacity(0);
+}
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+
+fun message_callback(text) {
+  global.message_sprite = centred_text(text, global.screen_h - 60);
+}
+Plymouth.SetMessageFunction(message_callback);

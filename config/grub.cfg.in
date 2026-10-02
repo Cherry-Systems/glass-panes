@@ -1,0 +1,36 @@
+set timeout=5
+set default=0
+
+insmod all_video
+insmod png
+set gfxmode=1024x768,auto
+if loadfont unicode; then
+  insmod gfxterm
+  terminal_output gfxterm
+fi
+background_image -m stretch /boot/grub/background.png
+
+set color_normal=light-gray/black
+set menu_color_normal=light-gray/black
+set menu_color_highlight=white/blue
+
+menuentry "Try or install @OS_NAME@ @OS_VERSION@" {
+  linux /live/vmlinuz boot=live components quiet splash loglevel=3 @LIVE_ARGS@
+  initrd /live/initrd.img
+}
+
+menuentry "@OS_NAME@ @OS_VERSION@ (Safe graphics)" {
+  linux /live/vmlinuz boot=live components nomodeset @LIVE_ARGS@
+  initrd /live/initrd.img
+}
+
+menuentry "@OS_NAME@ @OS_VERSION@ (Load into RAM)" {
+  linux /live/vmlinuz boot=live components quiet splash loglevel=3 toram @LIVE_ARGS@
+  initrd /live/initrd.img
+}
+
+if [ "$grub_platform" = "efi" ]; then
+  menuentry "UEFI Firmware Settings" {
+    fwsetup
+  }
+fi

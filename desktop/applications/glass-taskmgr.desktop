@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Task Manager
+Comment=See running apps and how hard your PC is working
+Keywords=processes;end task;kill;performance;cpu;memory;taskmgr;
+Exec=glass-taskmgr
+Icon=utilities-system-monitor
+Categories=System;Monitor;
+StartupNotify=true
+X-KDE-Shortcuts=Ctrl+Shift+Esc

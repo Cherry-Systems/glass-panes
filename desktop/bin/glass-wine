@@ -1,0 +1,5 @@
+#!/bin/sh
+# Opens a Windows program (.exe, .msi, .bat, .lnk) the way Windows would.
+# glass-wine FILE [ARGS...]    glass-wine --prepare (set up Windows app support in the background)
+export PYTHONPATH=/usr/lib/glasspanes${PYTHONPATH:+:$PYTHONPATH}
+exec python3 -m glasspanes.wine "$@"

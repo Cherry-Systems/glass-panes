@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Windows App Support
+Comment=Install and manage programs made for Windows
+Keywords=wine;exe;msi;windows;compatibility;program files;
+Exec=glass-settings --page windowsapps
+Icon=wine
+Categories=System;
+StartupNotify=true

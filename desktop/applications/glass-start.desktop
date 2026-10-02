@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Start
+Comment=Open the Start menu
+Exec=glass-shell toggle-start
+Icon=glasspanes-start
+NoDisplay=true
+StartupNotify=false
+X-KDE-Shortcuts=Ctrl+Esc

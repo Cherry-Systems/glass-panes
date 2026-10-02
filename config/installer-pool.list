@@ -1,0 +1,7 @@
+# Packages the installer adds to the installed system, shipped on the ISO as an offline
+# APT repository so installing works without internet. The groups conflict with each other,
+# so each line is resolved (with dependencies) separately.
+
+grub-pc os-prober
+grub-efi grub-efi-amd64-signed shim-signed efibootmgr os-prober
+cryptsetup-initramfs

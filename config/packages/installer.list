@@ -1,0 +1,4 @@
+# Graphical installer, used when INSTALLER="yes". Branded by hooks/60-installer.sh.
+
+calamares
+calamares-settings-debian

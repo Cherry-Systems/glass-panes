@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Quick Link Menu
+Exec=glass-shell winx
+Icon=glasspanes-start
+NoDisplay=true
+StartupNotify=false
+X-KDE-Shortcuts=Meta+X

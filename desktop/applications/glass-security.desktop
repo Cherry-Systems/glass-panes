@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Security Options
+Comment=Lock, switch user, sign out or open Task Manager
+Exec=glass-shell security
+Icon=system-lock-screen
+NoDisplay=true
+StartupNotify=false
+X-KDE-Shortcuts=Ctrl+Alt+Del

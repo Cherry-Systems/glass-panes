@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Windows Program
+Comment=Install or run a Windows program
+Exec=glass-wine %f
+Icon=wine
+NoDisplay=true
+Terminal=false
+StartupNotify=true
+MimeType=application/x-ms-dos-executable;application/x-msdownload;application/vnd.microsoft.portable-executable;application/x-msdos-program;application/x-msi;application/x-ms-installer;application/x-ms-shortcut;application/x-bat;application/x-wine-extension-msp;

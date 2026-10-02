@@ -1,0 +1,4 @@
+#!/bin/sh
+# Task Manager (Ctrl+Shift+Esc)
+export PYTHONPATH=/usr/lib/glasspanes${PYTHONPATH:+:$PYTHONPATH}
+exec python3 -m glasspanes.taskmgr "$@"

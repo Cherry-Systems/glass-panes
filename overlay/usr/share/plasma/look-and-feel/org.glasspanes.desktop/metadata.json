@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Glass Panes"
+            }
+        ],
+        "Category": "",
+        "Description": "The Glass Panes desktop: centred taskbar, Start, light theme",
+        "Id": "org.glasspanes.desktop",
+        "License": "GPL-3.0-or-later",
+        "Name": "Glass Panes",
+        "Version": "1.0"
+    },
+    "X-Plasma-APIVersion": "2"
+}

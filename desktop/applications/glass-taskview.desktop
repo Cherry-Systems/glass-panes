@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Task View
+Comment=See all your open windows and desktops
+Exec=qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut Overview
+Icon=glasspanes-taskview
+NoDisplay=true
+StartupNotify=false

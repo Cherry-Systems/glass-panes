@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Glass Panes
+Description=The Glass Panes logo on black with spinning dots
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/glasspanes
+ScriptFile=/usr/share/plymouth/themes/glasspanes/glasspanes.script

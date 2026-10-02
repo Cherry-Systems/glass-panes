@@ -1,0 +1,12 @@
+# Windows app support. build.sh enables the i386 architecture first, because most Windows
+# installers are 32-bit programs.
+
+wine
+wine64
+wine32:i386
+libwine
+libwine:i386
+fonts-wine
+winetricks
+cabextract
+winbind

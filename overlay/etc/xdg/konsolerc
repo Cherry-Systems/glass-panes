@@ -1,0 +1,11 @@
+[Desktop Entry]
+DefaultProfile=Windows.profile
+
+[KonsoleWindow]
+ShowMenuBarByDefault=false
+RememberWindowSize=true
+
+[TabBar]
+TabBarVisibility=AlwaysShowTabBar
+NewTabBehavior=PutNewTabAfterCurrentTab
+CloseTabOnMiddleMouseButton=true

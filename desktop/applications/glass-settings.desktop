@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+GenericName=Settings
+Comment=Change your PC's settings
+Keywords=control panel;preferences;options;configure;system;display;wifi;bluetooth;personalise;personalize;
+Exec=glass-settings
+Icon=preferences-system
+Categories=Settings;System;
+StartupNotify=true
+X-KDE-Shortcuts=Meta+I

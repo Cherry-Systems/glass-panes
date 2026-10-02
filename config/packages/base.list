@@ -1,0 +1,85 @@
+# Installed in every build, without "recommends" (every package is listed on purpose: no bloat).
+# One or more packages per line; "#" starts a comment.
+
+# Kernel, init and live-boot machinery
+linux-image-amd64
+systemd-sysv
+systemd-timesyncd
+systemd-zram-generator
+live-boot
+live-config
+live-config-systemd
+initramfs-tools
+
+# Boot loading screen (theme in overlay/usr/share/plymouth/themes/glasspanes)
+plymouth
+plymouth-label
+
+# Hardware support
+firmware-linux-free
+firmware-misc-nonfree
+firmware-iwlwifi
+firmware-realtek
+firmware-atheros
+firmware-amd-graphics
+firmware-intel-sound
+firmware-sof-signed
+amd64-microcode
+intel-microcode
+pciutils
+usbutils
+
+# Core userland
+sudo
+locales
+tzdata
+console-setup
+keyboard-configuration
+dbus
+dbus-user-session
+dbus-x11
+polkitd
+pkexec
+ca-certificates
+curl
+wget
+nano
+less
+bash-completion
+procps
+psmisc
+lsb-release
+xdg-user-dirs
+xdg-utils
+zip
+unzip
+p7zip-full
+ntfs-3g
+exfatprogs
+dosfstools
+udisks2
+upower
+accountsservice
+power-profiles-daemon
+
+# Networking
+network-manager
+wpasupplicant
+iw
+avahi-daemon
+libnss-mdns
+
+# Sound and Bluetooth
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
+libspa-0.2-bluetooth
+alsa-utils
+bluez
+
+# Printing (driverless printers work out of the box, like Windows)
+cups
+cups-filters
+cups-browsed
+ipp-usb

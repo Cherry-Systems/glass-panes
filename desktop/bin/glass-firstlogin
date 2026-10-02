@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs at every login: applies the Glass Panes look for new users and keeps it in sync.
+export PYTHONPATH=/usr/lib/glasspanes${PYTHONPATH:+:$PYTHONPATH}
+exec python3 -m glasspanes.firstlogin "$@"

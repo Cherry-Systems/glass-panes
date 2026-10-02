@@ -1,0 +1,26 @@
+#!/bin/sh
+# glass-shell                 run the Start menu / Run / Ctrl+Alt+Del helper (started at login)
+# glass-shell toggle-start    open or close Start (Windows key, Start button)
+# glass-shell search          open Start ready to search
+# glass-shell run             Run dialog (Win+R)
+# glass-shell winx            power user menu (Win+X)
+# glass-shell security        Ctrl+Alt+Del screen
+# glass-shell reload          re-read settings (after changing theme)
+export PYTHONPATH=/usr/lib/glasspanes${PYTHONPATH:+:$PYTHONPATH}
+
+case "${1:-}" in
+  ""|--daemon) exec python3 -m glasspanes.shell ;;
+  toggle-start) method=ToggleStart ;;
+  search) method=ShowSearch ;;
+  run) method=Run ;;
+  winx) method=PowerUserMenu ;;
+  security) method=Security ;;
+  reload) method=Reload ;;
+  *) echo "usage: glass-shell [toggle-start|search|run|winx|security|reload]" >&2; exit 2 ;;
+esac
+
+if ! dbus-send --session --type=method_call --dest=org.glasspanes.Shell /Shell \
+    "org.glasspanes.Shell.$method" 2>/dev/null; then
+  # Not running yet (or it crashed): start it and let it do the action once it's up.
+  setsid python3 -m glasspanes.shell --then "$method" >/dev/null 2>&1 &
+fi

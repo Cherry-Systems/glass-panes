@@ -1,0 +1,26 @@
+[General]
+ColorScheme=Win11OSLight
+AccentColor=0,103,192
+font=Selawik,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+menuFont=Selawik,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+toolBarFont=Selawik,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+smallestReadableFont=Selawik,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+fixed=Cascadia Mono,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+TerminalApplication=konsole
+TerminalService=org.kde.konsole.desktop
+BrowserApplication=firefox-esr.desktop
+
+[Icons]
+Theme=Win11
+
+[KDE]
+LookAndFeelPackage=org.glasspanes.desktop
+widgetStyle=kvantum
+SingleClick=false
+ShowDeleteCommand=false
+
+[WM]
+activeFont=Selawik,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+
+[PreviewSettings]
+MaximumRemoteSize=0

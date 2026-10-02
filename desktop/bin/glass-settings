@@ -1,0 +1,4 @@
+#!/bin/sh
+# Settings (Windows 11 style). glass-settings [--page NAME]
+export PYTHONPATH=/usr/lib/glasspanes${PYTHONPATH:+:$PYTHONPATH}
+exec python3 -m glasspanes.settings "$@"

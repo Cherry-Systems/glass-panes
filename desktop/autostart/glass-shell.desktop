@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Glass Panes Shell
+Comment=Start menu, Run and Ctrl+Alt+Del
+Exec=glass-shell --daemon
+NoDisplay=true
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=1
+X-KDE-AutostartScript=false

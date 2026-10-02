@@ -1,0 +1,10 @@
+#!/bin/sh
+# In a virtual machine, follow the VM window's size like Windows does with guest tools.
+case "$(systemd-detect-virt 2>/dev/null)" in none|"") exit 0 ;; esac
+command -v xrandr >/dev/null || exit 0
+last=""
+while sleep 2; do
+  out=$(xrandr 2>/dev/null | awk '/ connected/{o=$1} /\+$/ && o {print o, $1; exit}')
+  [ -n "$out" ] && [ "$out" != "$last" ] && xrandr --output "${out%% *}" --auto 2>/dev/null
+  last=$out
+done
