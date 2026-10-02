@@ -17,6 +17,7 @@ set_key shortVersion "$OS_VERSION"
 set_key versionedName "\"$OS_NAME $OS_VERSION\""
 set_key shortVersionedName "\"$OS_NAME $OS_VERSION\""
 set_key bootloaderEntryName "\"$OS_NAME\""
+set_key welcomeStyleCalamares false
 set_key SidebarBackground '"#f3f3f3"'
 set_key SidebarText '"#1a1a1a"'
 set_key SidebarTextCurrent '"#ffffff"'
@@ -77,6 +78,23 @@ EOF
 sed -i "s|Install Debian|Install $OS_NAME|; s|Installer for Debian Live|Installer for $OS_NAME|" \
   /usr/share/applications/calamares-install-debian.desktop /usr/bin/add-calamares-desktop-icon
 sed -i "s|^Icon=.*|Icon=$OS_ID-logo|" /usr/share/applications/calamares-install-debian.desktop
+# pkexec drops LANG, so the installer would start in American English instead of the live language.
+sed -i 's|^pkexec calamares$|if sudo -n true 2>/dev/null; then sudo -n env LANG="$LANG" LANGUAGE="$LANGUAGE" DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" QT_AUTO_SCREEN_SCALE_FACTOR=1 calamares; else pkexec calamares; fi|' \
+  /usr/bin/calamares-install-debian
+grep -q '^if sudo -n true' /usr/bin/calamares-install-debian
+# Like a Windows local account, any password is accepted (weak ones with a warning).
+sed -i 's|^\( *\)- minclass=0$|&\n\1- dictcheck=0|' /etc/calamares/modules/users.conf
+grep -q 'dictcheck=0' /etc/calamares/modules/users.conf
+printf 'allowWeakPasswords: true\nallowWeakPasswordsDefault: true\n' >> /etc/calamares/modules/users.conf
+
+cat > /etc/calamares/modules/locale.conf <<EOF
+---
+# The live system's timezone (from config/os.conf), since offline installs can't look it up.
+useSystemTimezone: true
+region: "${TIMEZONE%%/*}"
+zone: "${TIMEZONE#*/}"
+localeGenPath: "/etc/locale.gen"
+EOF
 # Debian's script ends in a broken preload loop ("): do", "ionice -C") that errors at every login.
 sed -i -e 's/ionice -C Idle/ionice -c 3/' -e "s/}'): do\$/}'); do/" /usr/bin/add-calamares-desktop-icon
 # glass-firstlogin puts the "Install Glass Panes" shortcut on the desktop itself.

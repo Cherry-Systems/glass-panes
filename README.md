@@ -15,6 +15,8 @@ No Microsoft logos, Edge or Copilot: Glass Panes has its own logo and artwork.
 | Settings | Glass Panes Settings (`settings/`), with the KDE Control Panel for advanced options |
 | Task Manager (Ctrl+Shift+Esc) | `taskmgr.py` |
 | Run (Win+R), Win+X menu, Ctrl+Alt+Del screen | `rundialog.py`, `shell.py`, `security.py` |
+| Sign-in and lock screens (Win+L) | SDDM theme and Plasma lock screen (`overlay/usr/share/sddm/themes/glasspanes`, `overlay/usr/share/glasspanes/lockscreen`) |
+| Recycle Bin | KDE Trash, renamed |
 | Windows Update | Glass Update (Debian security updates and Store app updates) |
 | Microsoft Store | Store (KDE Discover with Flathub) |
 | File Explorer, Notepad, Paint, Photos, Snipping Tool, Calculator, Terminal | Dolphin, KWrite, KolourPaint, Gwenview, Spectacle, KCalc, Konsole, renamed |

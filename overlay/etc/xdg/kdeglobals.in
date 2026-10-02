@@ -18,9 +18,13 @@ LookAndFeelPackage=org.glasspanes.desktop
 widgetStyle=kvantum
 SingleClick=false
 ShowDeleteCommand=false
+ShowIconsOnPushButtons=false
 
 [WM]
 activeFont=Selawik,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+
+[Locale]
+BinaryUnitDialect=1
 
 [PreviewSettings]
 MaximumRemoteSize=0

@@ -61,7 +61,7 @@ case "${1:-}" in
   *) die "unknown option: $1" ;;
 esac
 
-for tool in debootstrap mksquashfs grub-mkrescue xorriso mcopy apt-ftparchive curl; do
+for tool in debootstrap mksquashfs grub-mkrescue xorriso mcopy apt-ftparchive curl strip; do
   command -v "$tool" >/dev/null || die "missing '$tool' — run 'make deps'"
 done
 [[ -f /usr/share/keyrings/debian-archive-keyring.gpg ]] || die "missing Debian keyring — run 'make deps'"
@@ -168,6 +168,7 @@ install_all 644 "$ROOTFS/usr/share/polkit-1/actions" desktop/polkit/*.policy
 install_all 644 "$ROOTFS/usr/share/applications" desktop/applications/*.desktop
 install_all 644 "$ROOTFS/etc/xdg/autostart" desktop/autostart/*.desktop
 shopt -u nullglob
+install -d "$ROOTFS/usr/share/$OS_ID"
 cp -r --no-preserve=ownership desktop/icons "$ROOTFS/usr/share/$OS_ID/"
 install -D -m 644 "$WORK"/art/*.png -t "$ROOTFS/usr/share/$OS_ID/artwork/"
 install -D -m 644 "$WORK"/art/wallpapers/*.png -t "$ROOTFS/usr/share/backgrounds/$OS_ID/"
@@ -183,7 +184,7 @@ cp -a --no-preserve=ownership "$EXT"/. "$ROOTFS/tmp/ext/"
 HOOK_ENV=(
   "OS_NAME=$OS_NAME" "OS_ID=$OS_ID" "OS_VERSION=$OS_VERSION" "OS_EDITION=$OS_EDITION"
   "OS_CODENAME=$OS_CODENAME" "OS_HOSTNAME=$OS_HOSTNAME" "DEBIAN_SUITE=$DEBIAN_SUITE"
-  "LIVE_USERNAME=$LIVE_USERNAME"
+  "LIVE_USERNAME=$LIVE_USERNAME" "TIMEZONE=$TIMEZONE"
 )
 for hook in hooks/*.sh; do
   [[ -e $hook ]] || continue
@@ -192,6 +193,12 @@ for hook in hooks/*.sh; do
   in_chroot "${HOOK_ENV[@]}" /tmp/hook.sh
   rm -f "$ROOTFS/tmp/hook.sh"
 done
+
+# Debian ships Wine's Windows DLLs with debug info, and Wine copies them into every user's
+# Windows folder: stripping takes them from about 1.3 GB to 450 MB.
+log "Stripping debug info from Wine's Windows libraries"
+find "$ROOTFS"/usr/lib/*-linux-gnu/wine/*-windows -type f -print0 \
+  | xargs -0 -n 64 strip --strip-debug
 
 log "Cleaning up the root filesystem"
 umount -l "$ROOTFS/var/cache/apt/archives"

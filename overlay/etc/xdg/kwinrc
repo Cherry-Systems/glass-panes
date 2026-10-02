@@ -6,9 +6,6 @@ ButtonsOnRight=IAX
 BorderSize=Normal
 BorderSizeAuto=false
 
-[ModifierOnlyShortcuts]
-Meta=org.glasspanes.Shell,/Shell,org.glasspanes.Shell,ToggleStart
-
 [TabBox]
 LayoutName=thumbnail_grid
 

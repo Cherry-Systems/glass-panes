@@ -1,7 +1,7 @@
 .PHONY: deps build build-docker fetch run run-uefi run-install run-installed reset-vm artwork test \
 	try-start try-settings try-taskmgr try-run clean distclean
 
-HOST_PACKAGES = debootstrap debian-archive-keyring squashfs-tools xorriso apt-utils curl \
+HOST_PACKAGES = debootstrap debian-archive-keyring squashfs-tools xorriso apt-utils curl binutils \
 	grub-pc-bin grub-efi-amd64-bin mtools qemu-system-x86 qemu-utils ovmf python3-pil python3-numpy
 
 # Run the desktop apps from the source tree with a throwaway home, so trying them on this PC never

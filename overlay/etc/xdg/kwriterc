@@ -1,0 +1,11 @@
+[General]
+Show welcome view for new window=false
+
+[KTextEditor View]
+Folding Bar=false
+Icon Bar=false
+Line Modification=false
+Line Numbers=false
+Scroll Bar MiniMap=false
+Show Statusbar Input Mode=false
+Show Statusbar Tab Settings=false

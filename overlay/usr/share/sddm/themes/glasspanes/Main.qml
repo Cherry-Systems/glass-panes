@@ -60,7 +60,8 @@ Item {
         interval: 1000; running: true; repeat: true; triggeredOnStart: true
         onTriggered: {
             var now = new Date()
-            clock.text = Qt.formatTime(now, "h:mm")
+            // 12-hour without am/pm, as Windows shows it (Qt's "h" is 24-hour unless "AP" is present).
+            clock.text = Qt.formatTime(now, "h:mm AP").replace(/\s*\D+$/, "")
             date.text = Qt.formatDate(now, "dddd, d MMMM")
         }
     }
@@ -104,7 +105,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         anchors.verticalCenterOffset: root.signingIn ? -40 * root.unit : 60 * root.unit
         opacity: root.signingIn ? 1 : 0
-        visible: opacity > 0
+        visible: root.signingIn || opacity > 0  // visible at once, so the password box can take focus
         spacing: 18 * root.unit
         Behavior on opacity { NumberAnimation { duration: 300 } }
         Behavior on anchors.verticalCenterOffset { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }

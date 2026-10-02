@@ -12,6 +12,14 @@ cp -r "$K"/aurorae/* /usr/share/aurorae/themes/
 cp "$K"/color-schemes/*.colors /usr/share/color-schemes/
 cp -r "$K"/plasma/desktoptheme/* /usr/share/plasma/desktoptheme/
 cp -r "$K"/Kvantum/* /usr/share/Kvantum/
+# The theme's see-through title bars and windows expect a blurred background (which Kvantum
+# doesn't ask for), so windows behind showed through. Make them solid like Windows 11's Mica.
+sed -i 's/opacity:0\.65;mix-blend-mode:darken;fill:#f2f2f2/opacity:1;fill:#f3f3f3/g' \
+  /usr/share/aurorae/themes/Win11OS-light/decoration.svg
+sed -i 's/opacity:0\.65;fill:#282828/opacity:1;fill:#202020/g' \
+  /usr/share/aurorae/themes/Win11OS-dark/decoration.svg
+sed -i -e 's/^translucent_windows=.*/translucent_windows=false/' -e 's/^blurring=.*/blurring=false/' \
+  /usr/share/Kvantum/Win11OS-*/Win11OS-*.kvconfig
 
 # Win11 icon theme (GPL-3.0): installs Win11, Win11-dark (and -light).
 bash "$EXT/win11-icons/install.sh" -d /usr/share/icons >/dev/null

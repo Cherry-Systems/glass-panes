@@ -94,7 +94,8 @@ class Shell(QObject):
         if self._security is not None and self._security.isVisible():
             return
         self._security = SecurityScreen()
-        self._security.show()
+        self._security.showFullScreen()
+        self._security.activateWindow()
 
     def power_user_menu(self):
         """Win+X: the 'power user' menu Windows shows by the Start button."""

@@ -48,12 +48,20 @@ def window_pids():
         net_pid = d.intern_atom("_NET_WM_PID")
         net_name = d.intern_atom("_NET_WM_NAME")
         utf8 = d.intern_atom("UTF8_STRING")
+        net_state = d.intern_atom("_NET_WM_STATE")
+        net_type = d.intern_atom("_NET_WM_WINDOW_TYPE")
+        hidden_states = {d.intern_atom("_NET_WM_STATE_SKIP_TASKBAR")}
+        hidden_types = {d.intern_atom(f"_NET_WM_WINDOW_TYPE_{t}") for t in ("DESKTOP", "DOCK", "NOTIFICATION", "TOOLTIP")}
         out = {}
         prop = root.get_full_property(net_list, X.AnyPropertyType)
         for wid in (prop.value if prop else []):
             w = d.create_resource_object("window", wid)
             p = w.get_full_property(net_pid, X.AnyPropertyType)
             if not p:
+                continue
+            st = w.get_full_property(net_state, X.AnyPropertyType)
+            ty = w.get_full_property(net_type, X.AnyPropertyType)
+            if (st and hidden_states & set(st.value)) or (ty and hidden_types & set(ty.value)):
                 continue
             n = w.get_full_property(net_name, utf8)
             title = n.value.decode(errors="replace") if n else ""
@@ -207,13 +215,40 @@ class Sampler:
         self.procs = procs
 
 
+GLASS_MODULES = {"start": ("Start", "glasspanes-start"), "shell": ("Windows Shell Experience Host", "glasspanes-start"),
+                 "taskmgr": ("Task Manager", "utilities-system-monitor"), "settings": ("Settings", "preferences-system"),
+                 "firstlogin": ("Glass Panes Setup", "glasspanes-start")}
+SYSTEM_NAMES = {"plasmashell": ("Desktop Window Manager", "preferences-desktop"), "kwin_x11": ("Window Manager", "preferences-system-windows"),
+                "Xorg": ("Display Server", "video-display"), "ksmserver": ("Session Manager", "system-log-out"),
+                "konsole": ("Terminal", "utilities-terminal"), "dolphin": ("File Explorer", "system-file-manager")}
+
+
+def glass_module(info):
+    exe = os.path.basename(info.get("exe") or "") or info.get("name") or ""
+    cmd = info.get("cmdline") or []
+    if exe.startswith("python") and len(cmd) > 2 and cmd[1] == "-m":
+        return cmd[2].split(".")[-1]
+    return None
+
+
+def proc_icon(info, app_icons):
+    mod = glass_module(info)
+    if mod:
+        return GLASS_MODULES.get(mod, ("", "application-x-executable"))[1]
+    exe = os.path.basename(info.get("exe") or info.get("name") or "")
+    if exe in app_icons:
+        return app_icons[exe]
+    return SYSTEM_NAMES.get(exe, ("", exe))[1]
+
+
 def friendly_name(info, app_names):
     exe = os.path.basename(info.get("exe") or "") or info.get("name") or "?"
     cmd = info.get("cmdline") or []
-    if exe.startswith("python") and len(cmd) > 2 and cmd[1] == "-m":
-        mod = cmd[2].split(".")[-1]
-        return {"start": "Start", "shell": "Glass Shell", "taskmgr": "Task Manager",
-                "settings": "Settings"}.get(mod, mod)
+    mod = glass_module(info)
+    if mod:
+        return GLASS_MODULES.get(mod, (mod,))[0]
+    if exe in SYSTEM_NAMES and exe not in app_names:
+        return SYSTEM_NAMES[exe][0]
     if exe in ("wine-preloader", "wine64-preloader", "wine", "wine64") and cmd:
         return os.path.basename(cmd[0].replace("\\", "/"))
     return app_names.get(exe, exe)
@@ -286,8 +321,7 @@ class ProcessesPage(QWidget):
             it = self.items.get(key)
             if it is None:
                 it = QTreeWidgetItem()
-                exe = os.path.basename(info.get("exe") or info["name"] or "")
-                it.setIcon(0, style.app_icon(self.app_icons.get(exe, exe), 20))
+                it.setIcon(0, style.app_icon(proc_icon(info, self.app_icons), 20))
                 (self.apps_root if kind == "app" else self.bg_root).addChild(it)
                 self.items[key] = it
             it.setText(0, name)

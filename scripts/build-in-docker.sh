@@ -11,6 +11,6 @@ exec docker run --rm --privileged --name glasspanes-build \
     set -e
     apt-get update -qq
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq debootstrap debian-archive-keyring \
-      squashfs-tools xorriso apt-utils grub-pc-bin grub-efi-amd64-bin mtools curl ca-certificates \
+      squashfs-tools xorriso apt-utils binutils grub-pc-bin grub-efi-amd64-bin mtools curl ca-certificates \
       python3-pil python3-numpy fonts-dejavu-core >/dev/null
     exec ./build.sh "$@"' build-in-docker "$@"

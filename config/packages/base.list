@@ -9,6 +9,7 @@ systemd-zram-generator
 live-boot
 live-config
 live-config-systemd
+user-setup
 initramfs-tools
 
 # Boot loading screen (theme in overlay/usr/share/plymouth/themes/glasspanes)
@@ -31,6 +32,7 @@ usbutils
 
 # Core userland
 sudo
+cracklib-runtime  # word list for password checks (installer, Settings)
 locales
 tzdata
 console-setup
@@ -55,6 +57,7 @@ zip
 unzip
 p7zip-full
 ntfs-3g
+e2fsprogs  # ext4 tools: the installer formats with them, and boot-time disk checks need them
 exfatprogs
 dosfstools
 udisks2

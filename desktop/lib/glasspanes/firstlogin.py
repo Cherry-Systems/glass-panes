@@ -60,7 +60,19 @@ def install_shortcut():
         os.chmod(dst, 0o755)
 
 
+def live_no_lock():
+    """Live session: never lock the screen (nobody knows the live password)."""
+    if not paths.is_live_session():
+        return
+    for key in ("Autolock", "LockOnResume"):
+        subprocess.run(["kwriteconfig6", "--file", "kscreenlockerrc", "--group", "Daemon",
+                        "--key", key, "false"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["qdbus6", "org.kde.screensaver", "/ScreenSaver", "org.kde.screensaver.configure"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def main():
+    live_no_lock()
     data = prefs.load()
     if not data.get("applied"):
         # Give Plasma a moment to finish starting so the plasma-apply-* tools reach it.

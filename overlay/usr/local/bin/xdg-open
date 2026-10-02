@@ -1,0 +1,11 @@
+#!/bin/sh
+# Plasma's kde-open refuses to start Windows programs ("launching executables is not allowed"),
+# so apps that open downloads through xdg-open hand .exe/.msi/.bat/.lnk files to Wine directly.
+if [ $# -eq 1 ]; then
+  f=${1#file://}
+  case "$(printf '%s' "$f" | tr '[:upper:]' '[:lower:]')" in
+    *.exe|*.msi|*.bat|*.lnk)
+      [ -f "$f" ] && exec glass-wine "$f" ;;
+  esac
+fi
+exec /usr/bin/xdg-open "$@"

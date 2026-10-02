@@ -328,7 +328,10 @@ class StartMenu(QWidget):
         self.results = []
         self._hidden_at = 0
         self._anim = None
+        self._win_key_alone = False
         self.build()
+        # The popup grabs the keyboard, so the global Windows-key shortcut can't close it.
+        QApplication.instance().installEventFilter(self)
 
     # -- construction -------------------------------------------------------
     def build(self):
@@ -900,6 +903,15 @@ class StartMenu(QWidget):
 
     def eventFilter(self, obj, e):
         from PyQt6.QtCore import QEvent
+        if self.isVisible() and e.type() in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease) \
+                and not e.isAutoRepeat():
+            win_key = e.key() in (Qt.Key.Key_Meta, Qt.Key.Key_Super_L, Qt.Key.Key_Super_R)
+            if e.type() == QEvent.Type.KeyPress:
+                self._win_key_alone = win_key
+            elif win_key and self._win_key_alone:
+                self._win_key_alone = False
+                self.hide_menu()
+                return True
         if obj is self.search and e.type() == QEvent.Type.KeyPress and self.stack.currentIndex() == 2:
             if e.key() in (Qt.Key.Key_Down, Qt.Key.Key_Up):
                 lst = self.result_list

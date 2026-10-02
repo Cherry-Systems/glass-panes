@@ -2,3 +2,5 @@
 
 calamares
 calamares-settings-debian
+squashfs-tools  # unsquashfs copies the system onto the disk
+util-linux-extra  # hwclock, for the installer's clock step

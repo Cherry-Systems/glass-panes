@@ -27,8 +27,8 @@ def blurred(path, size):
 
 class SecurityScreen(QWidget):
     def __init__(self):
-        super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
-                         | Qt.WindowType.Tool)
+        # A normal window: KWin keeps panels above fullscreen utility (Qt Tool) windows.
+        super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setWindowTitle("Security options")
         geo = QGuiApplication.primaryScreen().geometry()
         for s in QGuiApplication.screens():
@@ -59,7 +59,7 @@ class SecurityScreen(QWidget):
         lay.addLayout(row)
         lay.addStretch(1)
         bottom = QHBoxLayout()
-        bottom.setContentsMargins(0, 0, 32, 32)
+        bottom.setContentsMargins(32 + 3 * 44, 0, 32, 32)  # balances the three icons so Cancel is centred
         bottom.addStretch(1)
         cancel = QPushButton("Cancel")
         cancel.setFixedSize(120, 34)

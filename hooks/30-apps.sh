@@ -56,36 +56,53 @@ hide_app org.kde.kmenuedit.desktop org.kde.plasma.emojier.desktop xterm.desktop 
   org.kde.plasma.themeexplorer.desktop winetricks.desktop display-im6.q16.desktop \
   org.kde.knewstuff-dialog6.desktop org.kde.kded6.desktop org.kde.plasma-welcome.desktop \
   vim.desktop htop.desktop nm-connection-editor.desktop org.kde.ksystemlog.desktop \
-  org.freedesktop.IBus.Setup.desktop kdesystemsettings.desktop
+  org.freedesktop.IBus.Setup.desktop kdesystemsettings.desktop org.kde.kate.desktop
 
 # --- window titles ---------------------------------------------------------------------------------
-# KDE apps put their name in every window title ("Home — Dolphin"). A small English (Australia)
-# translation catalog renames them there too, built from the stock British English catalog.
+# KDE apps put their name in every window title ("Home — Dolphin"). Translation catalogs rename
+# them there too, built from the stock British English catalog: a full copy for the Commonwealth
+# Englishes, and one holding only the renamed strings for the others (so US English keeps US spelling).
 apt-get install -y --no-install-recommends gettext >/dev/null
-retitle() {  # domain old new
-  gb="/usr/share/locale/en_GB/LC_MESSAGES/$1.mo"
+retitle() {  # domain [old new ...]
+  domain=$1
+  shift
+  gb="/usr/share/locale/en_GB/LC_MESSAGES/$domain.mo"
   [ -f "$gb" ] || return 0
   msgunfmt "$gb" -o /tmp/cat.po 2>/dev/null || return 0
-  OLD="$2" NEW="$3" python3 - <<'EOF'
-import os, re
-old, new = os.environ["OLD"], os.environ["NEW"]
-text = open("/tmp/cat.po", encoding="utf-8").read()
-def fix(m):
-    msgid, rest = m.group(1), m.group(2)
-    if msgid == old:
-        return f'msgid "{msgid}"\nmsgstr "{new}"'
-    return m.group(0)
-text = re.sub(r'msgid "(.*)"\nmsgstr "(.*)"', fix, text)
-open("/tmp/cat.po", "w", encoding="utf-8").write(text)
+  python3 - "$@" <<'EOF'
+import re, sys
+pairs = dict(zip(sys.argv[1::2], sys.argv[2::2]))
+full, changed = [], []
+for n, block in enumerate(open("/tmp/cat.po", encoding="utf-8").read().split("\n\n")):
+    kind, keep, msgid = None, [], None
+    for line in block.split("\n"):
+        if not line.startswith('"'):
+            kind = line.split(" ", 1)[0]
+            if kind == "msgid":
+                msgid = line[len('msgid "'):-1]
+        if kind and kind.startswith("msgstr"):
+            line = re.sub(r"[Ww]astebin", "Recycle Bin", line)
+        keep.append((kind, line))
+    if msgid in pairs:
+        keep = [k for k in keep if not (k[0] or "").startswith("msgstr")] + [("msgstr", f'msgstr "{pairs[msgid]}"')]
+    out = "\n".join(line for _, line in keep)
+    full.append(out)
+    if out != block or n == 0:
+        changed.append(out)
+open("/tmp/cat.po", "w", encoding="utf-8").write("\n\n".join(full))
+open("/tmp/changed.po", "w", encoding="utf-8").write("\n\n".join(changed))
 EOF
-  for lang in en_AU en_NZ; do
+  for lang in en_AU en_NZ en_GB en_IE en_ZA en_IN en_US en_CA; do
+    po=/tmp/cat.po
+    case $lang in en_US|en_CA) po=/tmp/changed.po ;; esac
     mkdir -p "/usr/share/locale/$lang/LC_MESSAGES"
-    msgfmt /tmp/cat.po -o "/usr/share/locale/$lang/LC_MESSAGES/$1.mo" 2>/dev/null || true
+    msgfmt "$po" -o "/usr/share/locale/$lang/LC_MESSAGES/$domain.mo.new" 2>/dev/null &&
+      mv "/usr/share/locale/$lang/LC_MESSAGES/$domain.mo.new" "/usr/share/locale/$lang/LC_MESSAGES/$domain.mo"
   done
-  rm -f /tmp/cat.po
+  rm -f /tmp/cat.po /tmp/changed.po
 }
 retitle dolphin "Dolphin" "File Explorer"
-retitle kwrite "KWrite" "Notepad"
+retitle kate "KWrite" "Notepad" "KWrite - Text Editor" "Notepad"
 retitle konsole "Konsole" "Terminal"
 retitle gwenview "Gwenview" "Photos"
 retitle okular "Okular" "PDF Reader"
@@ -98,6 +115,10 @@ retitle systemsettings "System Settings" "Control Panel"
 retitle kcharselect "KCharSelect" "Character Map"
 retitle partitionmanager "KDE Partition Manager" "Disk Management"
 retitle ark "Ark" "Compressed Folders"
+retitle kio6 "Trash" "Recycle Bin" "Empty Trash" "Empty Recycle Bin" "Move to Trash" "Move to Recycle Bin"
+for d in kconfigwidgets6 plasma_applet_org.kde.desktopcontainment plasma_applet_org.kde.plasma.trash; do
+  retitle "$d"
+done
 apt-get purge -y gettext >/dev/null
 apt-get autoremove -y --purge >/dev/null
 
@@ -121,6 +142,13 @@ if [ -f /usr/share/xsessions/plasmax11.desktop ]; then
     /usr/share/xsessions/plasmax11.desktop.disabled > /usr/share/xsessions/plasma.desktop
 fi
 update-alternatives --set x-session-manager /usr/bin/startplasma-x11 2>/dev/null || true
+
+# --- Windows 11 lock screen ----------------------------------------------------------------------------
+# kscreenlocker only loads the lock screen from the Plasma shell package, not from look-and-feel,
+# and refuses symlinks that point outside the package, so it has to be a copy.
+LOCKQML=/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/LockScreen.qml
+dpkg-divert --local --rename --divert "$LOCKQML.breeze" --add "$LOCKQML"
+cp /usr/share/glasspanes/lockscreen/LockScreen.qml "$LOCKQML"
 
 # Start menu folders for Windows programs installed through Wine show up in Start.
 mkdir -p /etc/skel/.local/share/applications
