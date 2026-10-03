@@ -645,9 +645,15 @@ class StartMenu(QWidget):
         for a in matched[:8]:
             results.append(dict(kind="app", title=a.name, sub="App", icon=style.app_icon(a.icon, 32),
                                 app=a))
-        for title, page, icon in settings_index.search(q, 4):
-            results.append(dict(kind="setting", title=title, sub="System settings",
-                                icon=style.icon(icon, self.t.accent_text, 24), page=page))
+        settings_hits = [dict(kind="setting", title=title, sub="System settings",
+                              icon=style.icon(icon, self.t.accent_text, 24), page=page)
+                         for title, page, icon in settings_index.search(q, 4)]
+        ql = q.lower()
+        if calc is None and settings_hits and \
+                any(w.startswith(ql) for w in settings_hits[0]["title"].lower().split()) and \
+                not (matched and matched[0].score(q) >= 60):
+            results.insert(0, settings_hits.pop(0))
+        results.extend(settings_hits)
         for f in self.files.search(q, 5):
             results.append(dict(kind="file", title=os.path.basename(f),
                                 sub=os.path.dirname(f).replace(os.path.expanduser("~"), "This PC"),
@@ -892,10 +898,8 @@ class StartMenu(QWidget):
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key.Key_Escape:
-            if self.stack.currentIndex() == 1:
+            if self.stack.currentIndex() == 1 and not self.search.text():
                 self.stack.setCurrentIndex(0)
-            elif self.search.text():
-                self.search.clear()
             else:
                 self.hide_menu()
             return

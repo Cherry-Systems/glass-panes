@@ -80,6 +80,14 @@ def live_no_lock():
     subprocess.run(["xset", "s", "off", "-dpms"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def laptop_power_button():
+    """The power button shuts a desktop down (/etc/xdg/powerdevilrc); on a laptop it sleeps,
+    plugged in or not."""
+    import glob
+    if glob.glob("/sys/class/power_supply/BAT*"):
+        appearance.kwrite("powerdevilrc", ["AC", "SuspendAndShutdown"], "PowerButtonAction", "1")
+
+
 def main():
     live_no_lock()
     data = prefs.load()
@@ -88,6 +96,7 @@ def main():
         time.sleep(3)
         appearance.apply(data=dict(data, taskbar_align=data["taskbar_align"]))
         put_desktop_icons()
+        laptop_power_button()
         prefs.update(applied=True)
     install_shortcut()
     if not paths.is_live_session() and not os.path.isdir(os.path.expanduser("~/.wine/drive_c")):

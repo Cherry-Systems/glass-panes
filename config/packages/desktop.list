@@ -9,6 +9,7 @@ sddm
 kde-config-sddm
 qml6-module-qtquick-virtualkeyboard  # on-screen keyboard at sign-in
 qt6-virtualkeyboard-plugin
+libpam-kwallet5  # unlocks saved passwords at sign-in instead of asking again
 
 # Plasma desktop (taskbar, window manager, tray applets)
 plasma-desktop
