@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Soak test: uses an installed Glass Panes VM like a person would, for hours, and keeps notes.
 
-  build/venv/bin/python tests/soak_test.py [--hours 6]
+  build/venv/bin/python tests/soak_test.py [--hours 6] [--stay-signed-in] [--as-installed]
 
 Boots the disk left by tests/install_test.py (build/vm-install-test), signs in, then repeats a
 round of everyday tasks (Start, Notepad, File Explorer, Settings, Task Manager, Run, a Windows
@@ -32,6 +32,8 @@ from PIL import Image, ImageStat  # noqa: E402
 PASSWORD = "glass123"
 HOURS = float(sys.argv[sys.argv.index("--hours") + 1]) if "--hours" in sys.argv else 6.0
 G = "python3 /tmp/soak_guest.py"
+# One long session (no sign-outs or restarts), so slow memory leaks can show up.
+STAY = "--stay-signed-in" in sys.argv
 SETTINGS_PAGES = ["display", "sound", "notifications", "power", "storage", "multitasking", "about",
                   "bluetooth", "printers", "mouse", "network", "background", "colors", "lockscreen",
                   "taskbar", "start", "installedapps", "defaultapps", "startup", "yourinfo", "signin",
@@ -106,7 +108,7 @@ def render():
     el = (S.finished or time.time()) - S.started
     lines = ["# Glass Panes soak test notes", "",
              f"- Started: {time.strftime('%a %d %b %H:%M', time.localtime(S.started))}, "
-             f"planned length {HOURS:g} h",
+             f"planned length {HOURS:g} h" + (", one session (no sign-outs or restarts)" if STAY else ""),
              f"- Status: {'finished ' + time.strftime('%H:%M', time.localtime(S.finished)) if S.finished else 'running'}"
              f", {el / 3600:.1f} h so far, {S.cycle} round(s) of tasks",
              "- System: the installed test VM (build/vm-install-test), 4 GB RAM, 4 CPUs, internet on", "",
@@ -727,9 +729,9 @@ def main():
         if time.time() > end:
             break
         try:
-            if S.cycle % 12 == 0:
+            if S.cycle % 12 == 0 and not STAY:
                 restart_pc()
-            elif S.cycle % 4 == 0:
+            elif S.cycle % 4 == 0 and not STAY:
                 sign_out_and_in()
             elif S.cycle % 3 == 0:
                 idle_period()
