@@ -195,6 +195,10 @@ def main():
     time.sleep(20)
     wait_for_screen("installed-desktop", 120)
     log("signed in to the installed system")
+    if OFFLINE:
+        log("offline: health checks skipped (the command channel needs the network)")
+        log("DONE")
+        return
     start_agent()
     time.sleep(3)
     shot("installed-desktop-clean")
