@@ -61,7 +61,8 @@ def install_shortcut():
 
 
 def live_no_lock():
-    """Live session: never lock the screen (nobody knows the live password)."""
+    """Live session: never lock the screen (nobody knows the live password), and never dim it,
+    turn it off or sleep, so the screen stays on while the installer runs."""
     if not paths.is_live_session():
         return
     for key in ("Autolock", "LockOnResume"):
@@ -69,6 +70,14 @@ def live_no_lock():
                         "--key", key, "false"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(["qdbus6", "org.kde.screensaver", "/ScreenSaver", "org.kde.screensaver.configure"],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for group in ("AC", "Battery", "LowBattery"):
+        appearance.kwrite("powerdevilrc", [group, "Display"], "DimDisplayWhenIdle", "false")
+        appearance.kwrite("powerdevilrc", [group, "Display"], "TurnOffDisplayWhenIdle", "false")
+        appearance.kwrite("powerdevilrc", [group, "SuspendAndShutdown"], "AutoSuspendAction", "0")
+    appearance.qdbus("org.kde.Solid.PowerManagement", "/org/kde/Solid/PowerManagement",
+                     "org.kde.Solid.PowerManagement.refreshStatus")
+    # The X server blanks the screen by itself after 10 minutes, separately from Plasma.
+    subprocess.run(["xset", "s", "off", "-dpms"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def main():
