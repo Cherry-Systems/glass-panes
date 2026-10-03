@@ -7,7 +7,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "desktop", "lib"))
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from glasspanes import apps, rundialog, settings_index, wine  # noqa: E402
+from glasspanes import appearance, apps, rundialog, settings_index, wine  # noqa: E402
 from glasspanes.start import calculate  # noqa: E402
 
 
@@ -79,6 +79,25 @@ class WineTest(unittest.TestCase):
         self.assertEqual(wine.command_for("/d/Setup.MSI", []), ["wine", "msiexec", "/i", "/d/Setup.MSI"])
         self.assertEqual(wine.command_for("/d/run.bat", ["x"]), ["wine", "cmd", "/c", "/d/run.bat", "x"])
         self.assertEqual(wine.command_for("/d/app.exe", []), ["wine", "/d/app.exe"])
+
+
+class TaskbarTest(unittest.TestCase):
+    S, T, TRAY, CLOCK = ("org.kde.plasma.panelspacer", "org.kde.plasma.icontasks",
+                         "org.kde.plasma.systemtray", "org.kde.plasma.digitalclock")
+
+    def test_intact_layout(self):
+        w = [[3, self.S], [4, self.T], [5, self.S], [6, self.TRAY], [17, self.CLOCK]]
+        self.assertEqual(appearance.taskbar_plan(w), 3)
+
+    def test_damaged_layout(self):
+        # Left, Center, Left with the old code: tray and clock pushed up against the apps.
+        w = [[4, self.T], [6, self.TRAY], [17, self.CLOCK], [21, self.S], [22, self.S]]
+        self.assertIsNone(appearance.taskbar_plan(w))
+        self.assertEqual(appearance.taskbar_repair_order(w), ([21, 4, 22, 6, 17], []))
+
+    def test_extra_spacers_removed(self):
+        w = [[4, self.T], [5, self.S], [6, self.TRAY], [7, self.S], [8, self.S]]
+        self.assertEqual(appearance.taskbar_repair_order(w), ([5, 4, 7, 6], [8]))
 
 
 if __name__ == "__main__":

@@ -2,9 +2,11 @@
 desktop at once: Plasma colours and panel theme, window borders, icons, Qt app style, lock screen,
 and Glass Panes' own apps."""
 import glob
+import json
 import os
 import shutil
 import subprocess
+import time
 
 from . import prefs
 
@@ -98,30 +100,129 @@ def apply_wallpaper(path):
            "file://" + path)
 
 
-TASKBAR_SCRIPT = """
+# The taskbar is [spacer, task manager, spacer, tray, clock]. Left alignment shrinks the first spacer
+# to nothing instead of removing it: Plasma's scripting can add widgets only at the end and can't
+# reorder them while the shell runs, so removed spacers can't be put back in place.
+SPACER = "org.kde.plasma.panelspacer"
+TASK_MANAGERS = ("org.kde.plasma.icontasks", "org.kde.plasma.taskmanager")
+
+TASKBAR_READ = """
 for (const p of panels()) {
   if (p.location !== 'bottom') continue;
-  const ids = p.widgetIds;
-  const spacers = p.widgets('org.kde.plasma.panelspacer');
-  const left = '%s' === 'left';
-  if (left) {
-    if (spacers.length > 1) {
-      const first = spacers.reduce((a, b) => ids.indexOf(a.id) < ids.indexOf(b.id) ? a : b);
-      first.remove();
-    }
-  } else if (spacers.length < 2) {
-    const s = p.addWidget('org.kde.plasma.panelspacer');
-    const order = p.widgetIds.filter(x => x !== s.id);
-    order.unshift(s.id);
-    p.widgetIds = order;
+  p.currentConfigGroup = ['General'];
+  const order = String(p.readConfig('AppletOrder', '')).split(';').map(Number).filter(n => n > 0);
+  const ids = order.filter(id => p.widgetIds.indexOf(id) >= 0)
+                   .concat(p.widgetIds.filter(id => order.indexOf(id) < 0));
+  print(JSON.stringify({panel: p.id, widgets: ids.map(id => [id, p.widgetById(id).type])}));
+  break;
+}
+"""
+
+TASKBAR_EDIT = """
+for (const p of panels()) {
+  if (p.id !== %(panel)d) continue;
+  for (let i = 0; i < %(add)d; i++) p.addWidget('org.kde.plasma.panelspacer');
+  for (const id of %(remove)s) p.widgetById(id).remove();
+  for (const [id, expanding] of %(spacers)s) {
+    const s = p.widgetById(id);
+    s.currentConfigGroup = ['General'];
+    s.writeConfig('expanding', expanding);
+    s.writeConfig('length', 0);
+    s.reloadConfig();
+  }
+  if (%(order)s.length) {
+    p.currentConfigGroup = ['General'];
+    p.writeConfig('AppletOrder', %(order)s.join(';'));
   }
 }
 """
 
 
+def _shell_script(js):
+    for tool in ("qdbus6", "qdbus"):
+        if shutil.which(tool):
+            try:
+                out = subprocess.run([tool, "org.kde.plasmashell", "/PlasmaShell",
+                                      "org.kde.PlasmaShell.evaluateScript", js],
+                                     capture_output=True, text=True, timeout=20)
+            except (OSError, subprocess.TimeoutExpired):
+                return None
+            return out.stdout if out.returncode == 0 else None
+    return None
+
+
+def _taskbar_layout():
+    out = _shell_script(TASKBAR_READ) or ""
+    for line in reversed(out.splitlines()):
+        try:
+            return json.loads(line)
+        except ValueError:
+            continue
+    return None
+
+
+def _taskbar_edit(panel, add=0, remove=(), spacers=(), order=()):
+    _shell_script(TASKBAR_EDIT % dict(panel=panel, add=add, remove=json.dumps(list(remove)),
+                                      spacers=json.dumps([list(s) for s in spacers]),
+                                      order=json.dumps(list(order))))
+
+
+def taskbar_plan(widgets):
+    """`widgets` is [[id, plugin], ...] in on-screen order. Returns the spacer in front of the task
+    manager if the layout is intact (a spacer on each side of it), otherwise None."""
+    ids = [w[0] for w in widgets]
+    kinds = dict((w[0], w[1]) for w in widgets)
+    tasks = next((i for i in ids if kinds[i] in TASK_MANAGERS), None)
+    if tasks is None:
+        return None
+    t = ids.index(tasks)
+    if t > 0 and kinds[ids[t - 1]] == SPACER and any(kinds[i] == SPACER for i in ids[t + 1:]):
+        return ids[t - 1]
+    return None
+
+
+def taskbar_repair_order(widgets):
+    """Order for a damaged taskbar: first spacer, task manager, second spacer, then everything else
+    as it was. Returns (order, extra spacers to remove), or None if there's no task manager or
+    fewer than two spacers."""
+    ids = [w[0] for w in widgets]
+    kinds = dict((w[0], w[1]) for w in widgets)
+    tasks = next((i for i in ids if kinds[i] in TASK_MANAGERS), None)
+    spacers = [i for i in ids if kinds[i] == SPACER]
+    if tasks is None or len(spacers) < 2:
+        return None
+    rest = [i for i in ids if i != tasks and kinds[i] != SPACER]
+    return [spacers[0], tasks, spacers[1]] + rest, spacers[2:]
+
+
 def apply_taskbar(align):
-    qdbus("org.kde.plasmashell", "/PlasmaShell", "org.kde.PlasmaShell.evaluateScript",
-          TASKBAR_SCRIPT % ("left" if align == "left" else "center"))
+    center = align != "left"
+    layout = _taskbar_layout()
+    if not layout:
+        return
+    left = taskbar_plan(layout["widgets"])
+    if left is not None:
+        _taskbar_edit(layout["panel"], spacers=[(left, center)])
+        return
+    # Damaged layout (e.g. by an older Glass Panes): put the spacers back, then restart the shell,
+    # which is the only time Plasma reads the widget order.
+    spacers = sum(1 for w in layout["widgets"] if w[1] == SPACER)
+    if spacers < 2:
+        _taskbar_edit(layout["panel"], add=2 - spacers)
+        time.sleep(2)
+        layout = _taskbar_layout()
+    plan = taskbar_repair_order(layout["widgets"]) if layout else None
+    if not plan:
+        return
+    order, extra = plan
+    if extra:
+        _taskbar_edit(layout["panel"], remove=extra)
+        time.sleep(2)
+    _taskbar_edit(layout["panel"], spacers=[(order[0], center), (order[2], True)], order=order)
+    time.sleep(2)
+    if not _run("systemctl", "--user", "restart", "plasma-plasmashell.service"):
+        subprocess.Popen(["plasmashell", "--replace"], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def notify_apps():
