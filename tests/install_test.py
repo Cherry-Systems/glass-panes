@@ -2,12 +2,14 @@
 """Unattended install test: boots the ISO in a fresh UEFI VM, clicks through the installer like a
 user would, reboots into the installed system, signs in and runs health checks.
 
-  build/venv/bin/python tests/install_test.py [--offline]
+  build/venv/bin/python tests/install_test.py [--offline] [--vm-dir DIR]
 
 Needs `python3 scripts/vm-shell.py serve` running on the host. Screenshots and report.txt go to
-build/install-test/. Coordinates are guest pixels for the 1600x900 test VM.
+build/install-test/. The VM's disk (wiped first) is build/vm-install-test unless --vm-dir is given.
+Coordinates are guest pixels for the 1600x900 test VM.
 """
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -17,7 +19,8 @@ import urllib.request
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 OUT = os.path.join(ROOT, "build/install-test")
-VM_DIR = os.path.join(ROOT, "build/vm-install-test")
+VM_DIR = os.path.join(ROOT, sys.argv[sys.argv.index("--vm-dir") + 1] if "--vm-dir" in sys.argv
+                      else "build/vm-install-test")
 os.environ["QMP_SOCK"] = os.path.join(VM_DIR, "qmp.sock")
 import qmp  # noqa: E402
 from PIL import Image, ImageStat  # noqa: E402
@@ -222,7 +225,23 @@ def main():
         "boot errors": "journalctl -b -p err --no-pager -q | tail -15; echo end",
         "disk use": "df -h / | tail -1",
     }
+    # The Store must have apps straight after installing, before anything refreshes the lists.
+    status = run("appstreamcli status 2>&1 | tail -1; flatpak remotes --columns=name")
+    log(f"--- Store catalogue (as installed)\n{status.rstrip()}")
+    count = int((re.findall(r"information on (\d+) software", status) or ["0"])[0])
+    if count < 1000:
+        raise SystemExit(f"FAIL: the Store's app catalogue has only {count} apps")
+    if "flathub" not in status:
+        raise SystemExit("FAIL: Flathub isn't set up in the Store")
+    run("setsid plasma-discover --search firefox >/dev/null 2>&1 < /dev/null &")
+    time.sleep(25)
+    shot("store-search")
+    run("pkill -f '^plasma-discover'")
     if not OFFLINE:
+        flat = run("flatpak remote-ls flathub --app --columns=application 2>&1 | wc -l", 180).strip()
+        log(f"--- Flathub apps available\n{flat}")
+        if not flat.isdigit() or int(flat) < 1000:
+            raise SystemExit(f"FAIL: couldn't list Flathub's apps ({flat})")
         checks["internet"] = "nmcli -t -f STATE general; curl -sI https://deb.debian.org | head -1"
         checks["software updates reachable"] = \
             f"echo {PASSWORD} | sudo -S -p '' apt-get update -q 2>&1 | tail -2"

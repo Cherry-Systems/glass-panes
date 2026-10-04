@@ -150,6 +150,9 @@ LOCKQML=/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/Lock
 dpkg-divert --local --rename --divert "$LOCKQML.breeze" --add "$LOCKQML"
 cp /usr/share/glasspanes/lockscreen/LockScreen.qml "$LOCKQML"
 
+# --- Store: Flathub as well as Debian's apps ----------------------------------------------------------
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
 # Start menu folders for Windows programs installed through Wine show up in Start.
 mkdir -p /etc/skel/.local/share/applications
 

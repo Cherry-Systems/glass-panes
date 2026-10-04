@@ -200,10 +200,20 @@ log "Stripping debug info from Wine's Windows libraries"
 find "$ROOTFS"/usr/lib/*-linux-gnu/wine/*-windows -type f -print0 \
   | xargs -0 -n 64 strip --strip-debug
 
+# The Store lists apps from the AppStream catalogue that apt downloads alongside the package lists
+# (the appstream package's apt hook, installed after the first update). Keep both in the image so
+# the Store is full from the first boot, even offline.
+log "Downloading the Store's app catalogue"
+in_chroot apt-get update
+in_chroot appstreamcli refresh-cache --force
+APPS="$(in_chroot appstreamcli status 2>/dev/null | sed -n 's/.*information on \([0-9]\+\) software.*/\1/p' | head -n1)"
+[[ ${APPS:-0} -gt 1000 ]] || die "the Store's app catalogue is missing or tiny (${APPS:-0} entries)"
+log "Store catalogue: $APPS entries"
+
 log "Cleaning up the root filesystem"
 umount -l "$ROOTFS/var/cache/apt/archives"
 in_chroot apt-get clean
-rm -rf "$ROOTFS"/var/lib/apt/lists/* "$ROOTFS"/tmp/* "$ROOTFS/var/lib/dbus/machine-id"
+rm -rf "$ROOTFS"/var/lib/apt/lists/partial/* "$ROOTFS"/tmp/* "$ROOTFS/var/lib/dbus/machine-id"
 rm -f "$ROOTFS/usr/sbin/policy-rc.d" "$ROOTFS/etc/resolv.conf"
 : > "$ROOTFS/etc/machine-id"
 unmount_rootfs
