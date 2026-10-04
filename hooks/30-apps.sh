@@ -123,6 +123,13 @@ done
 apt-get purge -y gettext >/dev/null
 apt-get autoremove -y --purge >/dev/null
 
+# --- file sizes ------------------------------------------------------------------------------------
+# KB, MB and GB like Windows instead of KiB, MiB and GiB (see translations/kcoreaddons6_qt.ts).
+KCA=/usr/share/locale/en/LC_MESSAGES/kcoreaddons6_qt.qm
+dpkg-divert --local --rename --divert "$KCA.debian" --add "$KCA"
+python3 /usr/share/glasspanes/translations/ts2qm.py /usr/share/glasspanes/translations/kcoreaddons6_qt.ts \
+  "$KCA" --base "$KCA.debian"
+
 # --- keyboard shortcuts ------------------------------------------------------------------------------
 # kglobalaccel registers X-KDE-Shortcuts from desktop files in this folder (Win+R, Win+X,
 # Ctrl+Alt+Del, Ctrl+Shift+Esc, Win+I, Win+S, Win+E, Ctrl+Esc, Win+U, Win+A).

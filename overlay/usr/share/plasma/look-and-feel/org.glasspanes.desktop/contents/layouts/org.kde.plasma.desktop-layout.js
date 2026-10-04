@@ -81,4 +81,5 @@ for (var i = 0; i < all.length; i++) {
     d.writeConfig("arrangement", 1);
     d.writeConfig("alignment", 0);
     d.writeConfig("selectionMarkers", false);
+    d.writeConfig("popups", false);
 }

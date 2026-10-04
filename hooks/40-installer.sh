@@ -62,9 +62,8 @@ EOF
 
 # Sizes in MB (counted in 1024s, as Windows does) instead of MiB.
 mkdir -p /usr/share/calamares/lang
-python3 /usr/share/glasspanes/installer/ts2qm.py /usr/share/glasspanes/installer/calamares_en.ts \
+python3 /usr/share/glasspanes/translations/ts2qm.py /usr/share/glasspanes/translations/calamares_en.ts \
   /usr/share/calamares/lang/calamares_en.qm
-rm -r /usr/share/glasspanes/installer
 
 sed -i -e "s|^branding: .*|branding: $OS_ID|" -e "s|^prompt-install: .*|prompt-install: true|" \
   /etc/calamares/settings.conf

@@ -144,25 +144,42 @@ class PatchQmlTest(unittest.TestCase):
                 self.assertNotEqual(open(out.name).read(), open(stock).read(), part)
 
 
-class InstallerTranslationTest(unittest.TestCase):
-    """The installer's MB catalogue compiles to a .qm that Qt reads."""
-    DIR = os.path.join(os.path.dirname(__file__), "../overlay/usr/share/glasspanes/installer")
+class TranslationTest(unittest.TestCase):
+    """The MB/GB catalogues compile to .qm files that Qt reads."""
+    ROOT = os.path.join(os.path.dirname(__file__), "..")
+    DIR = os.path.join(ROOT, "overlay/usr/share/glasspanes/translations")
 
-    def test_compiles(self):
+    def compile(self, ts, *extra):
         import subprocess
         from PyQt6.QtCore import QCoreApplication, QTranslator
-        app = QCoreApplication.instance() or QCoreApplication([])  # noqa: F841
+        self.app = QCoreApplication.instance() or QCoreApplication([])
         with tempfile.NamedTemporaryFile(suffix=".qm") as out:
-            subprocess.run([sys.executable, os.path.join(self.DIR, "ts2qm.py"),
-                            os.path.join(self.DIR, "calamares_en.ts"), out.name], check=True)
+            subprocess.run([sys.executable, os.path.join(self.DIR, "ts2qm.py"), os.path.join(self.DIR, ts),
+                            out.name, *extra], check=True)
             t = QTranslator()
             self.assertTrue(t.load(out.name))
-            self.assertEqual(t.translate("CreatePartitionJob", "Create new %1MiB partition on %3 (%2)", "@title"),
-                             "Create new %1MB partition on %3 (%2)")
-            self.assertEqual(t.translate("CreatePartitionDialog", " MiB"), " MB")
-            checker = "Calamares::RequirementsChecker"
-            self.assertEqual(t.translate(checker, "(%n second(s))", "@status", 1), "(%n second)")
-            self.assertEqual(t.translate(checker, "(%n second(s))", "@status", 3), "(%n seconds)")
+            return t
+
+    def test_kcoreaddons_merge(self):
+        base = os.path.join(self.ROOT, "build/rootfs/usr/share/locale/en/LC_MESSAGES/kcoreaddons6_qt.qm")
+        if os.path.exists(base + ".debian"):
+            base += ".debian"
+        if not os.path.exists(base):
+            self.skipTest("no build/rootfs")
+        t = self.compile("kcoreaddons6_qt.ts", "--base", base)
+        self.assertEqual(t.translate("KFormat", "%1 GiB", "IECBinaryDialect"), "%1 GB")
+        self.assertEqual(t.translate("KFormat", "Ki", "IEC binary prefix for 2^10"), "K")
+        self.assertEqual(t.translate("KFormat", "%n day(s)", "", 1), "%n day")
+        self.assertEqual(t.translate("KFormat", "%n day(s)", "", 2), "%n days")
+
+    def test_installer(self):
+        t = self.compile("calamares_en.ts")
+        self.assertEqual(t.translate("CreatePartitionJob", "Create new %1MiB partition on %3 (%2)", "@title"),
+                         "Create new %1MB partition on %3 (%2)")
+        self.assertEqual(t.translate("CreatePartitionDialog", " MiB"), " MB")
+        checker = "Calamares::RequirementsChecker"
+        self.assertEqual(t.translate(checker, "(%n second(s))", "@status", 1), "(%n second)")
+        self.assertEqual(t.translate(checker, "(%n second(s))", "@status", 3), "(%n seconds)")
 
 
 if __name__ == "__main__":
