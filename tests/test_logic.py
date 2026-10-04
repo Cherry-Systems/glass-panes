@@ -100,5 +100,24 @@ class TaskbarTest(unittest.TestCase):
         self.assertEqual(appearance.taskbar_repair_order(w), ([5, 4, 7, 6], [8]))
 
 
+class WallpaperListTest(unittest.TestCase):
+    def test_one_picture_per_kde_package(self):
+        from glasspanes.settings import personal
+        sizes = ["1024x768", "1080x1920", "1920x1080", "2560x1440", "440x247", "7680x2160"]
+        with tempfile.TemporaryDirectory() as d:
+            for sub in ("images", "images_dark", "screenshot"):
+                os.makedirs(os.path.join(d, "Next", "contents", sub))
+                for s in sizes:
+                    open(os.path.join(d, "Next", "contents", sub, s + ".png"), "w").close()
+            open(os.path.join(d, "glass.jpg"), "w").close()
+            old, personal.paths.WALLPAPERS = personal.paths.WALLPAPERS, d
+            try:
+                found = [os.path.relpath(p, d) for p in personal.list_wallpapers() if p.startswith(d)]
+            finally:
+                personal.paths.WALLPAPERS = old
+        self.assertEqual(found, ["glass.jpg", "Next/contents/images/1920x1080.png",
+                                 "Next/contents/images_dark/1920x1080.png"])
+
+
 if __name__ == "__main__":
     unittest.main()

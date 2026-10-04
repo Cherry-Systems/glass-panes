@@ -1,0 +1,12 @@
+{
+    "KPlugin": {
+        "Id": "glasspanes-wineplacement",
+        "Name": "Place Windows programs",
+        "Description": "Windows programs that let Windows choose where they open are centred instead of jammed into the top-left corner.",
+        "EnabledByDefault": true,
+        "License": "GPL-3.0-or-later"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js",
+    "KPackageStructure": "KWin/Script"
+}

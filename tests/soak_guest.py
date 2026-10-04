@@ -43,9 +43,12 @@ def info(w):
         cls = w.get_wm_class() or ("", "")
         pid = prop(w, "_NET_WM_PID")
         types = prop(w, "_NET_WM_WINDOW_TYPE")
+        state = prop(w, "_NET_WM_STATE")
         return {"id": w.id, "title": title, "class": cls[1] or cls[0],
                 "pid": int(pid[0]) if pid is not None and len(pid) else None,
-                "types": [d.get_atom_name(t) for t in types] if types is not None else []}
+                "types": [d.get_atom_name(t) for t in types] if types is not None else [],
+                "state": [d.get_atom_name(s).replace("_NET_WM_STATE_", "") for s in state]
+                if state is not None else []}
     except Exception:
         return None
 
@@ -54,9 +57,13 @@ def windows(all_types=False):
     """Windows the window manager is managing: normal windows and dialogs, or every kind (Start is
     a frameless utility window; the taskbar and desktop are also listed then)."""
     ids = prop(root, "_NET_CLIENT_LIST") or []
+    active = prop(root, "_NET_ACTIVE_WINDOW")
+    active = active[0] if active is not None and len(active) else None
     out = []
     for i in ids:
         w = info(d.create_resource_object("window", i))
+        if w:
+            w["active"] = i == active
         if w and (all_types or not w["types"] or any(t in w["types"] for t in (
                 "_NET_WM_WINDOW_TYPE_NORMAL", "_NET_WM_WINDOW_TYPE_DIALOG"))):
             out.append(w)

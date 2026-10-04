@@ -44,16 +44,32 @@ def preview_pixmap(wallpaper, mode, accent, w=320, h=200):
     return px
 
 
+def best_size(files):
+    """The landscape picture nearest 1920x1080 out of files named like 1920x1080.png."""
+    def score(f):
+        try:
+            w, h = (int(n) for n in os.path.splitext(f)[0].split("x"))
+        except ValueError:
+            return (2, 0)
+        return (0 if w >= h else 1, abs(w * h - 1920 * 1080))
+    return min(files, key=score)
+
+
 def list_wallpapers():
     found = []
     for d in (paths.WALLPAPERS, "/usr/share/wallpapers", os.path.expanduser("~/Pictures/Wallpapers")):
         if not os.path.isdir(d):
             continue
-        for root, _dirs, files in os.walk(d):
-            for f in sorted(files):
-                if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")) and "screenshot" not in f \
-                        and "contents/screenshot" not in root:
-                    found.append(os.path.join(root, f))
+        for root, dirs, files in os.walk(d):
+            dirs.sort()
+            if "contents/screenshot" in root:
+                continue
+            pics = sorted(f for f in files
+                          if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")) and "screenshot" not in f)
+            # KDE wallpaper packages hold one picture in many sizes (contents/images, images_dark).
+            if pics and os.path.basename(os.path.dirname(root)) == "contents":
+                pics = [best_size(pics)]
+            found += [os.path.join(root, f) for f in pics]
     return found[:24]
 
 

@@ -1,0 +1,17 @@
+{
+  "policies": {
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "DontCheckDefaultBrowser": true,
+    "UserMessaging": {
+      "ExtensionRecommendations": false,
+      "FeatureRecommendations": false,
+      "MoreFromMozilla": false,
+      "SkipOnboarding": true
+    },
+    "Preferences": {
+      "browser.aboutwelcome.enabled": { "Value": false, "Status": "default" },
+      "datareporting.policy.firstRunURL": { "Value": "", "Status": "default" }
+    }
+  }
+}

@@ -5,8 +5,10 @@ Lock Session=Meta+L\tScreensaver,Meta+L\tScreensaver,Lock Session
 [kwin]
 Overview=Meta+Tab,Meta+W,Toggle Overview
 Walk Through Windows=Alt+Tab,Alt+Tab,Walk Through Windows
-Window Maximize=Meta+Up,Meta+PgUp,Maximize Window
-Window Minimize=Meta+Down,Meta+PgDown,Minimize Window
+Window Maximize=none,Meta+PgUp,Maximize Window
+Window Minimize=none,Meta+PgDown,Minimize Window
+Glass Panes Maximize=Meta+Up,Meta+Up,Maximize Window
+Glass Panes Restore or Minimize=Meta+Down,Meta+Down,Restore or Minimize Window
 Window Quick Tile Top=none,Meta+Up,Quick Tile Window to the Top
 Window Quick Tile Bottom=none,Meta+Down,Quick Tile Window to the Bottom
 Show Desktop=Meta+D,Meta+D,Peek at Desktop

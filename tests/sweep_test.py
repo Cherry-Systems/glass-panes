@@ -346,14 +346,42 @@ SHORTCUTS = [
     ("Win+Ctrl+Enter (narrator)", ["meta_l-ctrl-ret"]), ("Win+Ctrl+D (new virtual desktop)", ["meta_l-ctrl-d"]),
     ("Win+H (dictation)", ["meta_l-h"]), ("Win+G (game bar)", ["meta_l-g"]), ("Win+L (lock)", ["meta_l-l"]),
 ]
+DESKTOP_COUNT = "qdbus6 org.kde.KWin /VirtualDesktopManager org.kde.KWin.VirtualDesktopManager.count"
+
+
+def maximized(w):
+    return w is not None and "MAXIMIZED_HORZ" in w["state"] and "MAXIMIZED_VERT" in w["state"]
+
+
+def minimized(w):
+    return w is not None and "HIDDEN" in w["state"]
+
+
+# Pressed with Notepad open (and Calculator opened after it, in front, when the third item is True).
+# The check looks at Notepad's window afterwards; without one, the screen has to change.
 WINDOW_SHORTCUTS = [
-    ("Win+Up (maximise)", ["meta_l-up"]), ("Win+Down (restore/minimise)", ["meta_l-down"]),
-    ("Win+Left (snap left)", ["meta_l-left"]), ("Win+Right (snap right)", ["meta_l-right"]),
-    ("Win+D (show desktop)", ["meta_l-d"]), ("Win+M (minimise all)", ["meta_l-m"]),
-    ("Win+Home (minimise others)", ["meta_l-home"]), ("Alt+Tab (switch)", ["alt-tab"]),
-    ("Win+1 (first taskbar app)", ["meta_l-1"]), ("Alt+F4 (close window)", ["alt-f4"]),
-    ("Win+Z (snap layouts)", ["meta_l-z"]),
+    ("Win+Up (maximise)", ["meta_l-up"], False, maximized),
+    ("Win+Up twice (stays maximised)", ["meta_l-up", "meta_l-up"], False, maximized),
+    ("Win+Down (restore a maximised window)", ["meta_l-up", "meta_l-down"], False,
+     lambda w: w is not None and not maximized(w) and not minimized(w)),
+    ("Win+Down (minimise a restored window)", ["meta_l-down"], False, minimized),
+    ("Win+Left (snap left)", ["meta_l-left"], False, None),
+    ("Win+Right (snap right)", ["meta_l-right"], False, None),
+    ("Win+D (show desktop)", ["meta_l-d"], False, None),
+    ("Win+M (minimise all)", ["meta_l-m"], False, minimized),
+    ("Win+Shift+M (restore after Win+M)", ["meta_l-m", "meta_l-shift-m"], False,
+     lambda w: w is not None and not minimized(w) and w["active"]),
+    ("Win+Home (minimise the other windows)", ["meta_l-home"], True, minimized),
+    ("Alt+Tab (switch)", ["alt-tab"], True, lambda w: w is not None and w["active"]),
+    ("Win+1 (first taskbar app)", ["meta_l-1"], False, None),
+    ("Alt+F4 (close window)", ["alt-f4"], False, lambda w: w is None),
+    ("Win+Z (snap layouts)", ["meta_l-z"], False, None),
 ]
+
+
+def notepad():
+    found = [w for w in win_ids(False).values() if w["class"] == "kwrite"]
+    return found[0] if found else None
 
 
 def sweep_shortcuts():
@@ -372,6 +400,9 @@ def sweep_shortcuts():
             pops = len(guest("popups"))
             change = diff(baseline, img)
             locked = guest("stats")["locked"] == "yes"
+            if "virtual desktop" in label:
+                n = run(DESKTOP_COUNT).strip().splitlines()[-1:]
+                return ("ok" if n == ["2"] else "fail"), f"desktops now {n}", path
             what = "; ".join(f"{w['title']} [{w['class']}]" for w in new)[:120]
             if locked:
                 tidy()
@@ -385,23 +416,35 @@ def sweep_shortcuts():
         time.sleep(1)
         tidy()
         if "virtual desktop" in label:
-            run("qdbus6 org.kde.KWin /VirtualDesktopManager org.kde.KWin.VirtualDesktopManager.removeDesktop "
-                "$(qdbus6 org.kde.KWin /VirtualDesktopManager org.kde.KWin.VirtualDesktopManager.desktops "
-                "2>/dev/null | tail -1) 2>/dev/null; true")
-    for label, combo in WINDOW_SHORTCUTS:
-        def press_with_window(label=label, combo=combo):
+            before = run(DESKTOP_COUNT).strip().splitlines()[-1:]
+            keys("meta_l-ctrl-f4")
+            time.sleep(1.5)
+            after = run(DESKTOP_COUNT).strip().splitlines()[-1:]
+            record("Shortcuts", "Win+Ctrl+F4 (close virtual desktop)", "ok" if after == ["1"] else "fail",
+                   f"desktops before {before}, after {after}")
+    for label, combo, second, check in WINDOW_SHORTCUTS:
+        def press_with_window(label=label, combo=combo, second=second, check=check):
             before = set(win_ids())
             run(f"setsid kwrite {DOCS}/notes.txt >/dev/null 2>&1 < /dev/null &")
-            wait_new(before, 15)
+            if not wait_new(before, 15, "kwrite"):
+                raise st.Failed("Notepad didn't open")
+            if second:
+                before = set(win_ids())
+                run("setsid kcalc >/dev/null 2>&1 < /dev/null &")
+                wait_new(before, 15, "kcalc")
             time.sleep(2)
             a = st.grab()
-            keys(*combo)
-            time.sleep(2.5)
+            for c in combo:
+                keys(c)
+                time.sleep(1)
+            time.sleep(1.5)
             b = st.grab()
             path = shot("winkey-" + "".join(c if c.isalnum() else "-" for c in label)[:40])
             change = diff(a, b)
-            for _ in range(2):
-                keys("meta_l-d") if "desktop" in label or "minimise" in label.lower() else None
+            if check:
+                w = notepad()
+                seen = "closed" if w is None else f"state {w['state']}, active {w['active']}"
+                return ("ok" if check(w) else "fail"), f"Notepad: {seen}; screen change {change:.0f}", path
             return ("look" if change > 2 else "fail"), f"screen change {change:.0f}", path
         attempt("Shortcuts", label, press_with_window)
         tidy()
@@ -443,12 +486,14 @@ def sweep_taskbar():
         time.sleep(1.5)
         p2 = shot("start-all-apps")
         keys("esc", "esc")
+        time.sleep(1)  # Start ignores being toggled again within 0.3 s of closing
         keys("meta_l")
         time.sleep(1.5)
         st.click(1047, 808)  # power button in Start
         time.sleep(1.5)
         p3 = shot("start-power-menu")
         keys("esc", "esc")
+        time.sleep(1)
         keys("meta_l")
         time.sleep(1)
         st.type_text("12*3")
@@ -619,6 +664,7 @@ def contact_sheets():
 
 
 def main():
+    global BASE
     parts = [sweep_files, sweep_apps, sweep_settings, sweep_windows_apps, sweep_functions,
              sweep_taskbar, sweep_shortcuts, sweep_sleep]
     os.makedirs(SHOTS, exist_ok=True)
@@ -637,7 +683,20 @@ def main():
     else:
         for f in os.listdir(SHOTS):
             os.remove(os.path.join(SHOTS, f))
-    if subprocess.run(["pgrep", "-f", f"^qemu-system.*{st.VM_DIR}"], capture_output=True).returncode == 0:
+    if "--only" in sys.argv:
+        parts = parts[:1]
+    running = subprocess.run(["pgrep", "-f", f"^qemu-system.*{st.VM_DIR}"], capture_output=True, text=True)
+    if "--attach" in sys.argv:
+        # Use the VM that is already running and signed in, and leave it running afterwards.
+        st.S.qemu_pid = int(running.stdout.split()[0])
+        BASE = desktop_ids()
+        for part in parts:
+            st.note(f"=== {part.__name__} ===")
+            part()
+            tidy()
+        write_report()
+        return
+    if running.returncode == 0:
         raise SystemExit("the sweep VM is already running")
     subprocess.Popen(["scripts/run-qemu.sh", "--installed", "--uefi", "--headless", "--std-vga", "--vm-dir", st.VM_DIR],
                      cwd=ROOT, stdout=open(os.path.join(OUT, "qemu.log"), "w"), stderr=subprocess.STDOUT,
@@ -648,7 +707,6 @@ def main():
     time.sleep(30)
     st.sign_in("sweep-sign-in")
     time.sleep(10)
-    global BASE
     BASE = desktop_ids()
     for part in parts:
         st.note(f"=== {part.__name__} ===")

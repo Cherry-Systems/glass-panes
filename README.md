@@ -23,7 +23,9 @@ No Microsoft logos, Edge or Copilot: Glass Panes has its own logo and artwork.
 | Running Windows programs | Wine 10, with .NET (Mono) and Gecko included for offline use |
 
 Keyboard shortcuts match Windows: Win (Start), Win+S, Win+E, Win+I, Win+R, Win+X, Win+L, Win+D,
-Win+Tab, Win+Up/Down, Win+Shift+S, Alt+Tab, Alt+F4, Ctrl+Esc, Ctrl+Shift+Esc and Ctrl+Alt+Del.
+Win+M, Win+Shift+M, Win+Home, Win+Tab, Win+Up/Down/Left/Right, Win+Ctrl+D, Win+Ctrl+F4, Win+A, Win+N,
+Win+Shift+S, Alt+Tab, Alt+F4, Ctrl+Esc, Ctrl+Shift+Esc and Ctrl+Alt+Del. Right-clicking Start opens the
+Win+X menu.
 
 ## Building
 

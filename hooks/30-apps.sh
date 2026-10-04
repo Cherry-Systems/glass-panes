@@ -151,6 +151,29 @@ LOCKQML=/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/Lock
 dpkg-divert --local --rename --divert "$LOCKQML.breeze" --add "$LOCKQML"
 cp /usr/share/glasspanes/lockscreen/LockScreen.qml "$LOCKQML"
 
+# --- Taskbar right-click menus -------------------------------------------------------------------------
+# Built from this Plasma's own menu, so it always matches the installed version.
+TMQML=/usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/ui/ContextMenu.qml
+dpkg-divert --local --rename --divert "$TMQML.plasma" --add "$TMQML"
+python3 /usr/share/glasspanes/taskbar/patch-context-menu.py "$TMQML.plasma" "$TMQML"
+
+# --- Notepad never reopens minimised ------------------------------------------------------------------
+# KWrite restores the window state it was closed in, so one closed from the taskbar while minimised
+# would only ever open minimised. The real binary keeps its name (Task Manager, pkill -x kwrite).
+mkdir -p /usr/lib/glasspanes/kwrite
+dpkg-divert --local --rename --divert /usr/lib/glasspanes/kwrite/kwrite --add /usr/bin/kwrite
+cat > /usr/bin/kwrite <<'EOF'
+#!/bin/sh
+# Notepad: clear the "minimised" bit KWrite saved when it was last closed, then start it.
+s="${XDG_DATA_HOME:-$HOME/.local/share}/kwrite/anonymous.katesession"
+if [ -w "$s" ] && grep -q '^WindowState=' "$s"; then
+  awk -F= '/^WindowState=/ { v = $2 + 0; if (v % 2 == 1) v -= 1; print "WindowState=" v; next } { print }' \
+    "$s" > "$s.tmp" && mv "$s.tmp" "$s"
+fi
+exec /usr/lib/glasspanes/kwrite/kwrite "$@"
+EOF
+chmod 755 /usr/bin/kwrite
+
 # --- Store: Flathub as well as Debian's apps ----------------------------------------------------------
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 

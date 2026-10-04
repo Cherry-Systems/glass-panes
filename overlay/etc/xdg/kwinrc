@@ -29,7 +29,8 @@ Number=1
 Rows=1
 
 [Plugins]
-glasspanes-altf4Enabled=true
+glasspanes-windowkeysEnabled=true
+glasspanes-wineplacementEnabled=true
 blurEnabled=true
 contrastEnabled=true
 shakecursorEnabled=false

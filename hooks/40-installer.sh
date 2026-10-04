@@ -86,6 +86,29 @@ grep -q '^if sudo -n true' /usr/bin/calamares-install-debian
 sed -i 's|^\( *\)- minclass=0$|&\n\1- dictcheck=0|' /etc/calamares/modules/users.conf
 grep -q 'dictcheck=0' /etc/calamares/modules/users.conf
 printf 'allowWeakPasswords: true\nallowWeakPasswordsDefault: true\n' >> /etc/calamares/modules/users.conf
+# Suggest a PC name like "sam-PC" rather than one built from the hardware model ("sam-standardpc").
+if grep -q '^hostname:' /etc/calamares/modules/users.conf; then
+  echo "users.conf already has a hostname section" >&2
+  exit 1
+fi
+printf 'hostname:\n  location: EtcFile\n  writeHostsFile: true\n  template: "${first}-PC"\n' \
+  >> /etc/calamares/modules/users.conf
+
+# "Erase disk" names the system partition "Local Disk" (filesystem label and GPT name), which is
+# what File Explorer shows for it, instead of "root".
+if [ ! -f /etc/calamares/modules/partition.conf ]; then
+  cp /usr/share/calamares/modules/partition.conf /etc/calamares/modules/partition.conf
+fi
+if ! grep -q '^partitionLayout:' /etc/calamares/modules/partition.conf; then
+  cat >> /etc/calamares/modules/partition.conf <<'EOF'
+
+partitionLayout:
+  - name: "Local Disk"
+    filesystem: "unknown"
+    mountPoint: "/"
+    size: 100%
+EOF
+fi
 
 cat > /etc/calamares/modules/locale.conf <<EOF
 ---

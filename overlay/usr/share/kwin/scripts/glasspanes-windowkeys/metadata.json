@@ -1,0 +1,12 @@
+{
+    "KPlugin": {
+        "Id": "glasspanes-windowkeys",
+        "Name": "Window keys like Windows",
+        "Description": "Alt+F4 closes the window or offers to shut down; Win+Up and Win+Down maximise, restore and minimise like Windows; Win+M, Win+Shift+M and Win+Home minimise and restore windows; Win+Ctrl+D and Win+Ctrl+F4 add and close virtual desktops.",
+        "EnabledByDefault": true,
+        "License": "GPL-3.0-or-later"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js",
+    "KPackageStructure": "KWin/Script"
+}
