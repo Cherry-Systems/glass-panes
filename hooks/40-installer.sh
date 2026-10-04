@@ -96,19 +96,19 @@ printf 'hostname:\n  location: EtcFile\n  writeHostsFile: true\n  template: "${f
 
 # "Erase disk" names the system partition "Local Disk" (filesystem label and GPT name), which is
 # what File Explorer shows for it, instead of "root".
-if [ ! -f /etc/calamares/modules/partition.conf ]; then
-  cp /usr/share/calamares/modules/partition.conf /etc/calamares/modules/partition.conf
+# Debian ships no partition.conf (Calamares' built-in defaults apply), so any other key stays default.
+if [ -f /etc/calamares/modules/partition.conf ]; then
+  echo "partition.conf exists now; merge partitionLayout into it" >&2
+  exit 1
 fi
-if ! grep -q '^partitionLayout:' /etc/calamares/modules/partition.conf; then
-  cat >> /etc/calamares/modules/partition.conf <<'EOF'
-
+cat > /etc/calamares/modules/partition.conf <<'EOF'
+---
 partitionLayout:
   - name: "Local Disk"
     filesystem: "unknown"
     mountPoint: "/"
     size: 100%
 EOF
-fi
 
 cat > /etc/calamares/modules/locale.conf <<EOF
 ---
