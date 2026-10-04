@@ -129,8 +129,18 @@ def finish_page_shown(img):
     return b > 150 and r < 60
 
 
+def vm_running():
+    """A VM already using VM_DIR, started with either an absolute or a relative path."""
+    rel = os.path.relpath(VM_DIR, ROOT)
+    ps = subprocess.run(["ps", "-eo", "args="], capture_output=True, text=True).stdout.splitlines()
+    return any(p.startswith("qemu-system") and (VM_DIR + "/" in p or " " + rel + "/" in p
+                                                 or "=" + rel + "/" in p) for p in ps)
+
+
 def main():
     global qemu_pid
+    if vm_running():
+        raise SystemExit(f"a VM is already running on {VM_DIR}; stop it first (its disk would be wiped)")
     shutil.rmtree(OUT, ignore_errors=True)
     os.makedirs(OUT)
     shutil.rmtree(VM_DIR, ignore_errors=True)
