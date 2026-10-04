@@ -90,7 +90,7 @@ def laptop_power_button():
 
 TRAY_SHORTCUTS = """
 var done = 0;
-var want = {"org.kde.plasma.networkmanagement": "Meta+A", "org.kde.plasma.notifications": "Meta+N"};
+var want = {"org.kde.plasma.notifications": "Meta+N"};
 for (const p of panels()) {
     for (const t of p.widgets("org.kde.plasma.systemtray")) {
         const box = desktopById(t.readConfig("SystrayContainmentId"));
@@ -108,15 +108,14 @@ print(done);
 
 
 def tray_shortcuts():
-    """Win+A opens the network flyout (the closest thing to Quick Settings) and Win+N the
-    notifications. These live on widgets inside the tray, which only exist once Plasma has
-    finished loading the panel, so the layout script can't set them."""
+    """Win+N opens the notifications. The shortcut lives on a widget inside the tray, which only
+    exists once Plasma has finished loading the panel, so the layout script can't set it."""
     for _ in range(10):
         try:
             r = subprocess.run(["qdbus6", "org.kde.plasmashell", "/PlasmaShell",
                                 "org.kde.PlasmaShell.evaluateScript", TRAY_SHORTCUTS],
                                capture_output=True, text=True, timeout=10)
-            if r.stdout.strip() == "2":
+            if r.stdout.strip() == "1":
                 return
         except (OSError, subprocess.TimeoutExpired):
             pass

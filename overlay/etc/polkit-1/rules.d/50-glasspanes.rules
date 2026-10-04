@@ -1,5 +1,6 @@
 // Like a Windows administrator account: administrators (the sudo group) can change the time,
-// PC name and network settings, and mount drives without typing their password every time.
+// PC name and network settings, mount drives and open Disk Management without typing their password
+// every time.
 polkit.addRule(function(action, subject) {
     if (!subject.local || !subject.active || !subject.isInGroup("sudo"))
         return;
@@ -9,6 +10,7 @@ polkit.addRule(function(action, subject) {
         id.indexOf("org.freedesktop.NetworkManager.") === 0 ||
         id.indexOf("org.freedesktop.udisks2.filesystem-mount") === 0 ||
         id.indexOf("org.freedesktop.login1.") === 0 ||
+        id === "org.kde.kpmcore.externalcommand.init" ||
         id === "org.freedesktop.packagekit.system-update" ||
         id === "org.freedesktop.packagekit.package-install" ||
         id === "org.freedesktop.packagekit.system-sources-refresh")

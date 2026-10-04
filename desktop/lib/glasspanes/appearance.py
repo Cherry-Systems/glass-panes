@@ -27,12 +27,20 @@ def _run(*argv, timeout=20):
         return False
 
 
-def kwrite(file, groups, key, value):
+def kwrite(file, groups, key, value, notify=False):
     args = ["kwriteconfig6", "--file", file]
     for g in groups:
         args += ["--group", g]
-    args += ["--key", key, str(value)]
+    args += ["--key", key] + (["--notify"] if notify else []) + [str(value)]
     return _run(*args)
+
+
+def set_night_light(on):
+    """Night light stays on until turned off, like Windows with no schedule. KWin only notices
+    the change through KConfig's change notification, not a reconfigure."""
+    if on:
+        kwrite("kwinrc", ["NightColor"], "Mode", "Constant", notify=True)
+    kwrite("kwinrc", ["NightColor"], "Active", "true" if on else "false", notify=True)
 
 
 def kread(file, groups, key, default=""):

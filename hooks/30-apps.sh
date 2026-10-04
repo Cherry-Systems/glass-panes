@@ -113,7 +113,8 @@ retitle haruna "Haruna" "Media Player"
 retitle plasma-discover "Discover" "Store"
 retitle systemsettings "System Settings" "Control Panel"
 retitle kcharselect "KCharSelect" "Character Map"
-retitle partitionmanager "KDE Partition Manager" "Disk Management"
+retitle partitionmanager "KDE Partition Manager" "Disk Management" \
+  "<application>KDE Partition Manager</application>" "Disk Management"
 retitle ark "Ark" "Compressed Folders"
 retitle kio6 "Trash" "Recycle Bin" "Empty Trash" "Empty Recycle Bin" "Move to Trash" "Move to Recycle Bin"
 for d in kconfigwidgets6 plasma_applet_org.kde.desktopcontainment plasma_applet_org.kde.plasma.trash; do
@@ -124,10 +125,10 @@ apt-get autoremove -y --purge >/dev/null
 
 # --- keyboard shortcuts ------------------------------------------------------------------------------
 # kglobalaccel registers X-KDE-Shortcuts from desktop files in this folder (Win+R, Win+X,
-# Ctrl+Alt+Del, Ctrl+Shift+Esc, Win+I, Win+S, Win+E, Ctrl+Esc, Win+U).
+# Ctrl+Alt+Del, Ctrl+Shift+Esc, Win+I, Win+S, Win+E, Ctrl+Esc, Win+U, Win+A).
 mkdir -p /usr/share/kglobalaccel
 for f in glass-start glass-search glass-settings glass-taskmgr glass-run glass-winx glass-security \
-    glass-accessibility; do
+    glass-accessibility glass-quicksettings; do
   ln -sf "/usr/share/applications/$f.desktop" "/usr/share/kglobalaccel/$f.desktop"
 done
 ln -sf "$LOCAL/org.kde.dolphin.desktop" /usr/share/kglobalaccel/org.kde.dolphin.desktop
@@ -151,11 +152,18 @@ LOCKQML=/usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/Lock
 dpkg-divert --local --rename --divert "$LOCKQML.breeze" --add "$LOCKQML"
 cp /usr/share/glasspanes/lockscreen/LockScreen.qml "$LOCKQML"
 
-# --- Taskbar right-click menus -------------------------------------------------------------------------
-# Built from this Plasma's own menu, so it always matches the installed version.
-TMQML=/usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/ui/ContextMenu.qml
-dpkg-divert --local --rename --divert "$TMQML.plasma" --add "$TMQML"
-python3 /usr/share/glasspanes/taskbar/patch-context-menu.py "$TMQML.plasma" "$TMQML"
+# --- Windows right-click menus and Quick Settings ------------------------------------------------------
+# Built from this Plasma's own QML, so they always match the installed version.
+patch_qml() {  # part file
+  dpkg-divert --local --rename --divert "$2.plasma" --add "$2"
+  python3 /usr/share/glasspanes/plasma/patch-qml.py "$1" "$2.plasma" "$2"
+}
+P=/usr/share/plasma/plasmoids
+patch_qml taskmanager-menu $P/org.kde.plasma.taskmanager/contents/ui/ContextMenu.qml
+patch_qml folderview $P/org.kde.desktopcontainment/contents/ui/FolderView.qml
+patch_qml folderitem $P/org.kde.desktopcontainment/contents/ui/FolderItemDelegate.qml
+patch_qml trayitem $P/org.kde.plasma.private.systemtray/contents/ui/items/PlasmoidItem.qml
+patch_qml panel $P/org.kde.panel/contents/ui/main.qml
 
 # --- Notepad never reopens minimised ------------------------------------------------------------------
 # KWrite restores the window state it was closed in, so one closed from the taskbar while minimised

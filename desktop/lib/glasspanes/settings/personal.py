@@ -106,8 +106,7 @@ class PersonalisationPage(Page):
         self.body.addSpacing(8)
         self.row("image", "Background", "Background image, colour, slideshow", open_key="background")
         self.row("color", "Colours", "Accent colour, transparency effects, colour theme", open_key="colors")
-        self.row("paint_brush", "Themes", "Install, create, manage",
-                 on_click=lambda: control_panel("kcm_lookandfeel"))
+        self.row("paint_brush", "Themes", "Light and dark, accent colour", open_key="colors")
         self.row("lock_closed", "Lock screen", "Lock screen images, apps, animations", open_key="lockscreen")
         self.row("text_font", "Fonts", "Install, manage", on_click=lambda: control_panel("kcm_fonts"))
         self.row("grid", "Start", "Recent apps and items, folders", open_key="start")

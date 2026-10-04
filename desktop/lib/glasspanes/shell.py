@@ -7,7 +7,7 @@ import sys
 from PyQt6.QtCore import QFileSystemWatcher, QObject, QPoint, QTimer, pyqtClassInfo, pyqtSlot
 from PyQt6.QtDBus import QDBusAbstractAdaptor, QDBusConnection
 from PyQt6.QtGui import QCursor, QGuiApplication
-from PyQt6.QtWidgets import QApplication, QMenu
+from PyQt6.QtWidgets import QApplication
 
 from . import prefs, session, style
 
@@ -41,6 +41,30 @@ class Adaptor(QDBusAbstractAdaptor):
         self.shell.power_user_menu()
 
     @pyqtSlot()
+    def DesktopMenu(self):  # noqa: N802
+        from .menus import desktop_menu
+        desktop_menu()
+
+    @pyqtSlot()
+    def TaskbarMenu(self):  # noqa: N802
+        from .menus import taskbar_menu
+        taskbar_menu()
+
+    @pyqtSlot()
+    def QuickSettings(self):  # noqa: N802
+        self.shell.quick_settings.toggle()
+
+    @pyqtSlot(str)
+    def TrayMenu(self, item):  # noqa: N802
+        from .menus import tray_menu
+        tray_menu(item)
+
+    @pyqtSlot()
+    def RecycleBinMenu(self):  # noqa: N802
+        from .menus import recycle_bin_menu
+        recycle_bin_menu()
+
+    @pyqtSlot()
     def ShutDown(self):  # noqa: N802
         self.shell.show_shutdown()
 
@@ -57,6 +81,7 @@ class Shell(QObject):
         self._run = None
         self._security = None
         self._shutdown = None
+        self._quick_settings = None
         self.adaptor = Adaptor(self)
         self.watcher = QFileSystemWatcher([prefs.FILE] if os.path.exists(prefs.FILE) else [])
         self.watcher.fileChanged.connect(lambda _p: QTimer.singleShot(200, self.reload))
@@ -67,6 +92,13 @@ class Shell(QObject):
             from .start import StartMenu
             self._start = StartMenu()
         return self._start
+
+    @property
+    def quick_settings(self):
+        if self._quick_settings is None:
+            from .quicksettings import QuickSettings
+            self._quick_settings = QuickSettings()
+        return self._quick_settings
 
     def reload(self):
         style.apply_app_style(self.app)
@@ -114,9 +146,7 @@ class Shell(QObject):
 
     def power_user_menu(self):
         """Win+X: the 'power user' menu Windows shows by the Start button."""
-        t = style.make_theme()
-        m = QMenu()
-        m.setStyleSheet(style.stylesheet(t))
+        m = style.menu()
 
         def run(*argv):
             return lambda: subprocess.Popen(list(argv), start_new_session=True)
@@ -143,8 +173,9 @@ class Shell(QObject):
                 m.addSeparator()
             else:
                 m.addAction(e[0], e[1])
-        sub = m.addMenu("Shut down or sign out")
-        sub.setStyleSheet(style.stylesheet(t))
+        sub = style.menu(m)
+        sub.setTitle("Shut down or sign out")
+        m.addMenu(sub)
         sub.addAction("Sign out", session.sign_out)
         sub.addAction("Sleep", session.sleep)
         sub.addAction("Shut down", session.shut_down)

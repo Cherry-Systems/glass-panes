@@ -167,7 +167,7 @@ class DisplayPage(Page):
         self.brightness_row()
         night = appearance.kread("kwinrc", ["NightColor"], "Active", "false") == "true"
         self.toggle("weather_moon", "Night light", "Use warmer colours to help block blue light",
-                    night, self.set_night)
+                    night, appearance.set_night_light)
         self.section("Scale & layout")
         if self.output:
             name = self.output["name"]
@@ -222,10 +222,6 @@ class DisplayPage(Page):
             "qdbus6", "org.kde.Solid.PowerManagement",
             "/org/kde/Solid/PowerManagement/Actions/BrightnessControl", "setBrightness", str(v)))
         self.row("brightness_high", "Brightness", "Adjust the brightness of the built-in display", s)
-
-    def set_night(self, on):
-        appearance.kwrite("kwinrc", ["NightColor"], "Active", "true" if on else "false")
-        appearance.qdbus("org.kde.KWin", "/KWin", "reconfigure")
 
     def apply(self, arg):
         in_background(self, lambda: ok("kscreen-doctor", arg, timeout=20), lambda _r: None)

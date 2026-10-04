@@ -51,6 +51,21 @@ Presentation
 }
 EOF
 
+# Calamares' own UI languages have no Australian English, so the welcome page would say "American
+# English" while installing the live language (shown on the Location page); hide that list.
+cat > "$BRANDING/stylesheet.qss" <<'EOF'
+#languageWidget, #languageIcon {
+    min-width: 0px; max-width: 0px; min-height: 0px; max-height: 0px;
+    margin: 0px; padding: 0px; border: none; background: transparent;
+}
+EOF
+
+# Sizes in MB (counted in 1024s, as Windows does) instead of MiB.
+mkdir -p /usr/share/calamares/lang
+python3 /usr/share/glasspanes/installer/ts2qm.py /usr/share/glasspanes/installer/calamares_en.ts \
+  /usr/share/calamares/lang/calamares_en.qm
+rm -r /usr/share/glasspanes/installer
+
 sed -i -e "s|^branding: .*|branding: $OS_ID|" -e "s|^prompt-install: .*|prompt-install: true|" \
   /etc/calamares/settings.conf
 sed -i 's|^\(show[A-Za-z]*Url: *\)true|\1false|' /etc/calamares/modules/welcome.conf

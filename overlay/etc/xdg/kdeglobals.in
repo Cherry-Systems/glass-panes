@@ -26,5 +26,10 @@ activeFont=Selawik,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 [Locale]
 BinaryUnitDialect=1
 
+# Control Panel must not offer one-click KDE themes (Breeze), which would undo the whole look.
+[KDE Control Module Restrictions]
+kcm_landingpage=false
+kcm_lookandfeel=false
+
 [PreviewSettings]
 MaximumRemoteSize=0

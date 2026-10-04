@@ -453,21 +453,46 @@ def sweep_shortcuts():
 # ---- taskbar, tray, desktop ---------------------------------------------------------------------------
 def sweep_taskbar():
     tidy()
-    spots = [("Start button", (645, 877), "left"), ("Search button", (697, 877), "left"),
-             ("Task view button", (748, 877), "left"), ("Volume icon", (1427, 877), "left"),
-             ("Network icon", (1461, 877), "left"), ("Third tray icon", (1491, 877), "left"),
-             ("Tray overflow (^)", (1519, 877), "left"), ("Clock / calendar", (1560, 877), "left"),
-             ("Right-click taskbar", (1100, 877), "right"), ("Right-click Start button", (645, 877), "right"),
-             ("Right-click desktop", (900, 400), "right"), ("Right-click Recycle Bin", (58, 45), "right")]
-    for label, (x, y), button in spots:
-        def poke(x=x, y=y, button=button, label=label):
+    # The last item says whose pop-up must appear: a Glass shell menu (and its title), not KDE's.
+    spots = [("Start button", (645, 877), "left", None), ("Search button", (697, 877), "left", None),
+             ("Task view button", (748, 877), "left", None),
+             ("Volume icon (Quick Settings)", (1427, 877), "left", "Quick Settings"),
+             ("Network icon (Quick Settings)", (1461, 877), "left", "Quick Settings"),
+             ("Third tray icon", (1491, 877), "left", None), ("Tray overflow (^)", (1519, 877), "left", None),
+             ("Clock / calendar", (1560, 877), "left", None),
+             ("Right-click volume icon", (1427, 877), "right", ""),
+             ("Right-click taskbar", (1100, 877), "right", ""),
+             ("Right-click Start button", (645, 877), "right", ""),
+             ("Right-click desktop", (900, 400), "right", ""),
+             ("Right-click Recycle Bin", (58, 45), "right", "")]
+    for label, (x, y), button, glass in spots:
+        def poke(x=x, y=y, button=button, label=label, glass=glass):
             qmp = st.qmp
             qmp.pointer(qmp.connect(), x, y, 1, button)
             time.sleep(2.5)
-            return "look", "", shot("tray-" + "".join(c if c.isalnum() else "-" for c in label)[:30])
+            path = shot("tray-" + "".join(c if c.isalnum() else "-" for c in label)[:30])
+            if glass is None:
+                return "look", "", path
+            pops = guest("popups")
+            ours = [p for p in pops if "glasspanes" in (p.get("program") or "")
+                    and glass in (p.get("title") or "")]
+            kde = [p for p in pops if "plasmashell" in (p.get("program") or "")
+                   and not any("TOOLTIP" in t for t in p.get("types", []))]
+            seen = "; ".join(f"{p.get('title')!r} [{p.get('program', '')[:40]}]" for p in pops)[:160]
+            return ("ok" if ours and not kde else "fail"), f"popups: {seen or 'none'}", path
         attempt("Taskbar & desktop", label, poke)
         keys("esc")
         time.sleep(1)
+
+    def win_a():
+        keys("meta_l-a")
+        time.sleep(2)
+        pops = guest("popups")
+        path = shot("quick-settings-win-a")
+        keys("esc")
+        found = any(p.get("title") == "Quick Settings" for p in pops)
+        return ("ok" if found else "fail"), "Win+A opened Quick Settings" if found else "no Quick Settings", path
+    attempt("Taskbar & desktop", "Win+A opens Quick Settings", win_a)
 
     def recycle_icon():
         before = set(win_ids())

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Quick Settings
+Comment=Wi-Fi, Bluetooth, volume, brightness and battery
+Exec=glass-shell quick-settings
+Icon=preferences-system
+NoDisplay=true
+StartupNotify=false
+X-KDE-Shortcuts=Meta+A

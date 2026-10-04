@@ -207,6 +207,7 @@ def stylesheet(t):
     QMenu {{ background: {t.flyout}; border: 1px solid {t.flyout_border}; border-radius: 8px; padding: 4px; }}
     QMenu::item {{ padding: 7px 28px 7px 12px; border-radius: 4px; margin: 1px 0; }}
     QMenu::item:selected {{ background: {t.subtle_hover}; }}
+    QMenu::item:disabled {{ color: {t.text_disabled}; }}
     QMenu::separator {{ height: 1px; background: {t.divider}; margin: 4px 0; }}
     QMenu::icon {{ padding-left: 10px; }}
     QTreeView, QTableView, QListView {{ background: transparent; border: none; outline: none;
@@ -256,6 +257,29 @@ def kde_icon_theme():
     return "Win11"
 
 
+def menu(parent=None):
+    """A Windows 11 pop-up menu: the flyout colours, with see-through corners so they show rounded."""
+    from PyQt6.QtWidgets import QMenu
+    m = QMenu(parent)
+    m.setStyleSheet(stylesheet(make_theme()))
+    m.setWindowFlag(Qt.WindowType.FramelessWindowHint)
+    m.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    return m
+
+
+def windows_style():
+    """Fusion, except that clicking a slider's track jumps the thumb there, like Windows."""
+    from PyQt6.QtWidgets import QProxyStyle, QStyle
+
+    class WindowsStyle(QProxyStyle):
+        def styleHint(self, hint, option=None, widget=None, data=None):
+            if hint == QStyle.StyleHint.SH_Slider_AbsoluteSetButtons:
+                return Qt.MouseButton.LeftButton.value
+            return super().styleHint(hint, option, widget, data)
+
+    return WindowsStyle("Fusion")
+
+
 def apply_app_style(app, t=None):
     t = t or make_theme()
     load_fonts()
@@ -263,7 +287,7 @@ def apply_app_style(app, t=None):
         QIcon.setThemeName(kde_icon_theme())
     QIcon.setFallbackThemeName("breeze")
     app.setFont(font())
-    app.setStyle("Fusion")
+    app.setStyle(windows_style())
     from PyQt6.QtGui import QPalette
     pal = QPalette()
     pal.setColor(QPalette.ColorRole.Window, QColor(t.window))

@@ -119,5 +119,51 @@ class WallpaperListTest(unittest.TestCase):
                                  "Next/contents/images_dark/1920x1080.png"])
 
 
+class PatchQmlTest(unittest.TestCase):
+    """Every Plasma QML patch still applies to the stock files of the last build."""
+    ROOT = os.path.join(os.path.dirname(__file__), "..")
+    PLASMOIDS = os.path.join(ROOT, "build/rootfs/usr/share/plasma/plasmoids")
+    PARTS = {"taskmanager-menu": "org.kde.plasma.taskmanager/contents/ui/ContextMenu.qml",
+             "folderview": "org.kde.desktopcontainment/contents/ui/FolderView.qml",
+             "folderitem": "org.kde.desktopcontainment/contents/ui/FolderItemDelegate.qml",
+             "trayitem": "org.kde.plasma.private.systemtray/contents/ui/items/PlasmoidItem.qml",
+             "panel": "org.kde.panel/contents/ui/main.qml"}
+
+    def test_parts_apply(self):
+        import subprocess
+        if not os.path.isdir(self.PLASMOIDS):
+            self.skipTest("no build/rootfs")
+        script = os.path.join(self.ROOT, "overlay/usr/share/glasspanes/plasma/patch-qml.py")
+        for part, rel in self.PARTS.items():
+            stock = os.path.join(self.PLASMOIDS, rel)
+            if os.path.exists(stock + ".plasma"):
+                stock += ".plasma"
+            with tempfile.NamedTemporaryFile(suffix=".qml") as out:
+                r = subprocess.run([sys.executable, script, part, stock, out.name], capture_output=True, text=True)
+                self.assertEqual(r.returncode, 0, f"{part}: {r.stderr}")
+                self.assertNotEqual(open(out.name).read(), open(stock).read(), part)
+
+
+class InstallerTranslationTest(unittest.TestCase):
+    """The installer's MB catalogue compiles to a .qm that Qt reads."""
+    DIR = os.path.join(os.path.dirname(__file__), "../overlay/usr/share/glasspanes/installer")
+
+    def test_compiles(self):
+        import subprocess
+        from PyQt6.QtCore import QCoreApplication, QTranslator
+        app = QCoreApplication.instance() or QCoreApplication([])  # noqa: F841
+        with tempfile.NamedTemporaryFile(suffix=".qm") as out:
+            subprocess.run([sys.executable, os.path.join(self.DIR, "ts2qm.py"),
+                            os.path.join(self.DIR, "calamares_en.ts"), out.name], check=True)
+            t = QTranslator()
+            self.assertTrue(t.load(out.name))
+            self.assertEqual(t.translate("CreatePartitionJob", "Create new %1MiB partition on %3 (%2)", "@title"),
+                             "Create new %1MB partition on %3 (%2)")
+            self.assertEqual(t.translate("CreatePartitionDialog", " MiB"), " MB")
+            checker = "Calamares::RequirementsChecker"
+            self.assertEqual(t.translate(checker, "(%n second(s))", "@status", 1), "(%n second)")
+            self.assertEqual(t.translate(checker, "(%n second(s))", "@status", 3), "(%n seconds)")
+
+
 if __name__ == "__main__":
     unittest.main()

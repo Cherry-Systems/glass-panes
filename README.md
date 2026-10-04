@@ -15,11 +15,13 @@ No Microsoft logos, Edge or Copilot: Glass Panes has its own logo and artwork.
 | Settings | Glass Panes Settings (`settings/`), with the KDE Control Panel for advanced options |
 | Task Manager (Ctrl+Shift+Esc) | `taskmgr.py` |
 | Run (Win+R), Win+X menu, Ctrl+Alt+Del screen | `rundialog.py`, `shell.py`, `security.py` |
+| Quick Settings (Win+A, or the network and volume icons): Wi-Fi, Bluetooth, night light, energy saver, volume, brightness | `quicksettings.py` |
+| Right-click menus for the taskbar, desktop and Recycle Bin | `shell.py`, with small patches to Plasma's QML (`overlay/usr/share/glasspanes/plasma/patch-qml.py`) |
 | Sign-in and lock screens (Win+L) | SDDM theme and Plasma lock screen (`overlay/usr/share/sddm/themes/glasspanes`, `overlay/usr/share/glasspanes/lockscreen`) |
 | Recycle Bin | KDE Trash, renamed |
 | Windows Update | Glass Update (Debian security updates and Store app updates) |
 | Microsoft Store | Store (KDE Discover with Flathub) |
-| File Explorer, Notepad, Paint, Photos, Snipping Tool, Calculator, Terminal | Dolphin, KWrite, KolourPaint, Gwenview, Spectacle, KCalc, Konsole, renamed |
+| File Explorer, Notepad, Paint, Photos, Snipping Tool, Calculator, Terminal, Disk Management | Dolphin, KWrite, KolourPaint, Gwenview, Spectacle, KCalc, Konsole, KDE Partition Manager, renamed |
 | Running Windows programs | Wine 10, with .NET (Mono) and Gecko included for offline use |
 
 Keyboard shortcuts match Windows: Win (Start), Win+S, Win+E, Win+I, Win+R, Win+X, Win+L, Win+D,
