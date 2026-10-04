@@ -40,7 +40,11 @@ Item {
     function login() {
         if (!users.currentItem)
             return
-        message = ""
+        if (message !== "") {
+            message = ""
+            password.forceActiveFocus()
+            return
+        }
         busy.running = true
         sddm.login(users.currentItem.userName, password.text, sessionIndex)
     }
@@ -535,6 +539,10 @@ Item {
             root.flyout = ""
             event.accepted = true
         } else if (!root.signingIn) {
+            // Waking the PC arrives as one of these; it should show the clock, not the password box.
+            if ([Qt.Key_WakeUp, Qt.Key_PowerOff, Qt.Key_PowerDown, Qt.Key_Sleep, Qt.Key_Suspend,
+                 Qt.Key_Standby, Qt.Key_Hibernate, Qt.Key_unknown, 0].indexOf(event.key) >= 0)
+                return
             root.showSignIn()
             if (event.text.length > 0 && event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter
                     && event.key !== Qt.Key_Space && event.key !== Qt.Key_Escape)

@@ -48,6 +48,7 @@ kde-config-flatpak
 packagekit-tools
 qdbus-qt6
 pulseaudio-utils
+libnotify-bin  # notify-send, which many scripts and some apps use to show notifications
 xdg-utils
 xdg-user-dirs
 xinput

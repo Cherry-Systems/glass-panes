@@ -1,8 +1,11 @@
 """The Settings window: account card, 'Find a setting', category navigation, breadcrumb pages."""
+import json
+import os
 import sys
 
 from PyQt6.QtCore import QSize, Qt, QTimer
 from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtNetwork import QLocalServer, QLocalSocket
 from PyQt6.QtWidgets import (QApplication, QCompleter, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
                              QPushButton, QStackedWidget, QVBoxLayout, QWidget)
 
@@ -101,6 +104,7 @@ class SettingsWindow(QMainWindow):
         comp = QCompleter(titles, self)
         comp.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         comp.setFilterMode(Qt.MatchFlag.MatchContains)
+        comp.popup().setObjectName("popup")
         comp.popup().setStyleSheet(style.stylesheet(self.t))
         comp.activated.connect(self.find_setting)
         self.search.setCompleter(comp)
@@ -192,7 +196,7 @@ class SettingsWindow(QMainWindow):
                 lb.setProperty("role", "title")
                 self.crumb.addWidget(lb)
             else:
-                b = QPushButton(title)
+                b = QPushButton(title.replace("&", "&&"))
                 b.setCursor(Qt.CursorShape.PointingHandCursor)
                 b.setStyleSheet(f"QPushButton {{ font-size: 21pt; font-weight: 600; border: none;"
                                 f" background: transparent; color: {self.t.text_secondary}; padding: 0; }}"
@@ -225,6 +229,64 @@ class SettingsWindow(QMainWindow):
             QTimer.singleShot(0, self.search.clear)
 
 
+def handle_args(w, argv, already_open=False):
+    page = argv[argv.index("--page") + 1] if "--page" in argv else "system"
+    if "--uninstall" in argv:
+        page = "installedapps"
+    if not (already_open and page == "system" and "--page" not in argv):
+        w.open(page, reset=True)
+    if w.isMinimized():
+        w.showNormal()
+    w.show()
+    w.raise_()
+    w.activateWindow()
+    if "--uninstall" in argv:
+        did = argv[argv.index("--uninstall") + 1]
+        QTimer.singleShot(300, lambda: w.pages["installedapps"].uninstall_desktop_id(did))
+    if "--change-password" in argv:
+        QTimer.singleShot(300, lambda: w.pages["accounts"].change_password())
+
+
+def server_name():
+    return f"glass-settings-{os.getuid()}"
+
+
+def pass_to_running(argv):
+    """Like Windows, there is only one Settings window: a second launch hands its arguments to
+    the open window, which jumps to the page."""
+    sock = QLocalSocket()
+    sock.connectToServer(server_name())
+    if not sock.waitForConnected(500):
+        return False
+    sock.write(json.dumps(argv[1:]).encode() + b"\n")
+    sock.waitForBytesWritten(1000)
+    sock.disconnectFromServer()
+    return True
+
+
+def listen(w):
+    QLocalServer.removeServer(server_name())
+    server = QLocalServer(w)
+
+    def incoming():
+        conn = server.nextPendingConnection()
+
+        def read():
+            if not conn.canReadLine():
+                return
+            try:
+                args = json.loads(bytes(conn.readLine()).decode())
+            except ValueError:
+                return
+            handle_args(w, ["glass-settings"] + [str(a) for a in args], already_open=True)
+        conn.readyRead.connect(read)
+        conn.disconnected.connect(conn.deleteLater)
+        read()
+    server.newConnection.connect(incoming)
+    server.listen(server_name())
+    return server
+
+
 def main(argv=None):
     argv = list(sys.argv if argv is None else argv)
     app = QApplication(argv)
@@ -236,18 +298,14 @@ def main(argv=None):
         from .system import show_winver
         show_winver()
         return 0
+    screenshot = "--screenshot" in argv
+    if not screenshot and pass_to_running(argv):
+        return 0
     w = SettingsWindow()
-    page = argv[argv.index("--page") + 1] if "--page" in argv else "system"
-    if "--uninstall" in argv:
-        page = "installedapps"
-    w.open(page, reset=True)
-    w.show()
-    if "--uninstall" in argv:
-        did = argv[argv.index("--uninstall") + 1]
-        QTimer.singleShot(300, lambda: w.pages["installedapps"].uninstall_desktop_id(did))
-    if "--change-password" in argv:
-        QTimer.singleShot(300, lambda: w.pages["accounts"].change_password())
-    if "--screenshot" in argv:
+    if not screenshot:
+        w._server = listen(w)
+    handle_args(w, argv)
+    if screenshot:
         out = argv[argv.index("--screenshot") + 1]
         QTimer.singleShot(1500, lambda: (w.grab().save(out), app.quit()))
     return app.exec()

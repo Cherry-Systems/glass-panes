@@ -29,6 +29,7 @@ Number=1
 Rows=1
 
 [Plugins]
+glasspanes-altf4Enabled=true
 blurEnabled=true
 contrastEnabled=true
 shakecursorEnabled=false

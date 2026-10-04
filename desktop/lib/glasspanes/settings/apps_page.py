@@ -73,6 +73,8 @@ class InstalledAppsPage(Page):
             items.append(dict(name=app.name, icon=app.icon, kind="flatpak" if fp else "deb",
                               ident=fp or app.id, app=app))
         for guid, name in appdb.wine_uninstall_entries():
+            if name.startswith(("Wine Mono", "Wine Gecko")):  # part of Windows app support itself
+                continue
             items.append(dict(name=name, icon="wine", kind="wine", ident=guid, app=None))
         items.sort(key=lambda x: x["name"].lower())
         return items
@@ -154,9 +156,11 @@ DEFAULT_TYPES = [
 ]
 
 
-def apps_for_mime(mime):
+def apps_for_mime(mime, current=""):
+    everything = appdb.all_apps(include_hidden=True)
+    visible = {_program(a): a for a in everything.values() if not a.no_display}
     out = []
-    for app in appdb.all_apps(include_hidden=True).values():
+    for app in everything.values():
         try:
             cp = configparser.RawConfigParser(strict=False, interpolation=None)
             cp.read(app.path, encoding="utf-8")
@@ -165,7 +169,20 @@ def apps_for_mime(mime):
             continue
         if mime in types.split(";"):
             out.append(app)
-    return sorted(out, key=lambda a: a.name.lower())
+    # Apps like Okular register each file type through a hidden helper entry under their
+    # original name; those only count when no app from Start handles the type.
+    shown = [a for a in out if not a.no_display]
+    cur = appdb.find(current) if current else None
+    if cur:
+        shown.append(cur)
+    if not shown:
+        shown = [visible.get(_program(a), a) for a in out]
+    return sorted({a.id: a for a in shown}.values(), key=lambda a: a.name.lower())
+
+
+def _program(app):
+    argv = app.command()
+    return os.path.basename(argv[0]) if argv else app.id
 
 
 class DefaultAppsPage(Page):
@@ -175,10 +192,10 @@ class DefaultAppsPage(Page):
     def build(self):
         self.note("Choose the apps Glass Panes uses to open files and links.")
         for title, icon, mimes in DEFAULT_TYPES:
-            choices = apps_for_mime(mimes[0])
+            current = run("xdg-mime", "query", "default", mimes[0], timeout=5).strip()
+            choices = apps_for_mime(mimes[0], current)
             if not choices:
                 continue
-            current = run("xdg-mime", "query", "default", mimes[0], timeout=5).strip()
             self.combo(icon, title, "", [(a.name, a.id) for a in choices], current,
                        lambda did, ms=mimes: subprocess.run(["xdg-mime", "default", did, *ms]))
         self.section("Related settings")
@@ -191,7 +208,7 @@ class StartupPage(Page):
     parent_key = "apps"
     HIDDEN = ("glass-", "org.kde.", "polkit", "xdg-user-dirs", "at-spi", "pipewire", "geoclue",
               "kde", "baloo", "plasma", "powerdevil", "gmenudbusmenuproxy", "spice", "print-applet",
-              "calamares", "klipper", "xembed")
+              "calamares", "klipper", "xembed", "kaccess", "kglobalacceld", "pam_kwallet")
 
     def build(self):
         self.note("Apps can be configured to start when you sign in. In most cases, they'll start "

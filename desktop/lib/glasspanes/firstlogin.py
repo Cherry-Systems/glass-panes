@@ -88,6 +88,41 @@ def laptop_power_button():
         appearance.kwrite("powerdevilrc", ["AC", "SuspendAndShutdown"], "PowerButtonAction", "1")
 
 
+TRAY_SHORTCUTS = """
+var done = 0;
+var want = {"org.kde.plasma.networkmanagement": "Meta+A", "org.kde.plasma.notifications": "Meta+N"};
+for (const p of panels()) {
+    for (const t of p.widgets("org.kde.plasma.systemtray")) {
+        const box = desktopById(t.readConfig("SystrayContainmentId"));
+        if (!box) continue;
+        for (const type in want) {
+            for (const w of box.widgets(type)) {
+                if (!w.globalShortcut) w.globalShortcut = want[type];
+                done++;
+            }
+        }
+    }
+}
+print(done);
+"""
+
+
+def tray_shortcuts():
+    """Win+A opens the network flyout (the closest thing to Quick Settings) and Win+N the
+    notifications. These live on widgets inside the tray, which only exist once Plasma has
+    finished loading the panel, so the layout script can't set them."""
+    for _ in range(10):
+        try:
+            r = subprocess.run(["qdbus6", "org.kde.plasmashell", "/PlasmaShell",
+                                "org.kde.PlasmaShell.evaluateScript", TRAY_SHORTCUTS],
+                               capture_output=True, text=True, timeout=10)
+            if r.stdout.strip() == "2":
+                return
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        time.sleep(3)
+
+
 def main():
     live_no_lock()
     data = prefs.load()
@@ -97,6 +132,7 @@ def main():
         appearance.apply(data=dict(data, taskbar_align=data["taskbar_align"]))
         put_desktop_icons()
         laptop_power_button()
+        tray_shortcuts()
         prefs.update(applied=True)
     install_shortcut()
     if not paths.is_live_session() and not os.path.isdir(os.path.expanduser("~/.wine/drive_c")):

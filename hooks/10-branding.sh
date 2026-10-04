@@ -16,7 +16,6 @@ ID=$OS_ID
 ID_LIKE=debian
 VERSION_CODENAME=$DEBIAN_SUITE
 LOGO=$OS_ID-logo
-HOME_URL="https://github.com/"
 EOF
 ln -sf ../usr/lib/os-release /etc/os-release
 

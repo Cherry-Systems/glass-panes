@@ -5,6 +5,7 @@
 # glass-shell run             Run dialog (Win+R)
 # glass-shell winx            power user menu (Win+X)
 # glass-shell security        Ctrl+Alt+Del screen
+# glass-shell shutdown        'Shut Down Glass Panes' box (Alt+F4 on the desktop)
 # glass-shell reload          re-read settings (after changing theme)
 export PYTHONPATH=/usr/lib/glasspanes${PYTHONPATH:+:$PYTHONPATH}
 
@@ -15,8 +16,9 @@ case "${1:-}" in
   run) method=Run ;;
   winx) method=PowerUserMenu ;;
   security) method=Security ;;
+  shutdown) method=ShutDown ;;
   reload) method=Reload ;;
-  *) echo "usage: glass-shell [toggle-start|search|run|winx|security|reload]" >&2; exit 2 ;;
+  *) echo "usage: glass-shell [toggle-start|search|run|winx|security|shutdown|reload]" >&2; exit 2 ;;
 esac
 
 if ! dbus-send --session --type=method_call --dest=org.glasspanes.Shell /Shell \

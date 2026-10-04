@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Accessibility Settings
+Exec=glass-settings --page accessibility
+Icon=preferences-desktop-accessibility
+NoDisplay=true
+StartupNotify=false
+X-KDE-Shortcuts=Meta+U

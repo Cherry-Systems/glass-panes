@@ -211,6 +211,11 @@ def stylesheet(t):
     QMenu::icon {{ padding-left: 10px; }}
     QTreeView, QTableView, QListView {{ background: transparent; border: none; outline: none;
         alternate-background-color: {t.rgba(t.text, 0.02)}; }}
+    QListView#popup {{ background: {t.flyout}; border: 1px solid {t.flyout_border}; border-radius: 6px;
+        padding: 4px; color: {t.text}; }}
+    QListView#popup::item {{ padding: 6px 10px; border-radius: 4px; }}
+    QListView#popup::item:hover, QListView#popup::item:selected {{ background: {t.subtle_hover};
+        color: {t.text}; }}
     QTreeView::item, QTableView::item {{ padding: 4px; border: none; }}
     QTreeView::item:hover, QTableView::item:hover {{ background: {t.subtle_hover}; }}
     QTreeView::item:selected, QTableView::item:selected {{ background: {t.rgba(t.accent_fill, 0.22)};

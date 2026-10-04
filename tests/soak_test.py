@@ -22,8 +22,8 @@ import uuid
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
-VM_DIR = os.path.join(ROOT, "build/vm-install-test")
-OUT = os.path.join(ROOT, "build/soak")
+VM_DIR = os.path.join(ROOT, os.environ.get("SOAK_VM_DIR", "build/vm-install-test"))
+OUT = os.path.join(ROOT, os.environ.get("SOAK_OUT", "build/soak"))
 SHOTS = os.path.join(OUT, "shots")
 os.environ["QMP_SOCK"] = os.path.join(VM_DIR, "qmp.sock")
 import qmp  # noqa: E402
@@ -193,7 +193,8 @@ def wait_for_screen(timeout, settle=6):
 # ---- talking to the VM -----------------------------------------------------------------------------
 def agents():
     out = subprocess.run(["ss", "-tnpH", "dport = :18765"], capture_output=True, text=True).stdout
-    return {int(p.split("pid=")[1].split(",")[0]) for p in out.split() if "pid=" in p}
+    pids = {int(p.split("pid=")[1].split(",")[0]) for p in out.split() if "pid=" in p}
+    return pids - {os.getpid()}
 
 
 def run(cmd, timeout=60):
@@ -676,7 +677,8 @@ def sync_code():
     """Test the desktop code in this checkout rather than what was on the disk at install time."""
     subprocess.run(["tar", "-czf", os.path.join(OUT, "code.tar.gz"), "-C", os.path.join(ROOT, "desktop/lib"),
                     "glasspanes"], check=True)
-    out = run("curl -s 10.0.2.2:18765/files/build/soak/code.tar.gz -o /tmp/code.tar.gz && " +
+    rel = os.path.relpath(os.path.join(OUT, "code.tar.gz"), ROOT)
+    out = run(f"curl -s 10.0.2.2:18765/files/{rel} -o /tmp/code.tar.gz && " +
               sudo("tar -xzf /tmp/code.tar.gz -C /usr/lib/glasspanes") + " && "
               "pkill -f '^python3 -m glasspanes.shell'; sleep 1; "
               "setsid glass-shell --daemon >/dev/null 2>&1 < /dev/null & sleep 4; echo synced", 60)

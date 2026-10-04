@@ -124,9 +124,10 @@ apt-get autoremove -y --purge >/dev/null
 
 # --- keyboard shortcuts ------------------------------------------------------------------------------
 # kglobalaccel registers X-KDE-Shortcuts from desktop files in this folder (Win+R, Win+X,
-# Ctrl+Alt+Del, Ctrl+Shift+Esc, Win+I, Win+S, Win+E, Ctrl+Esc).
+# Ctrl+Alt+Del, Ctrl+Shift+Esc, Win+I, Win+S, Win+E, Ctrl+Esc, Win+U).
 mkdir -p /usr/share/kglobalaccel
-for f in glass-start glass-search glass-settings glass-taskmgr glass-run glass-winx glass-security; do
+for f in glass-start glass-search glass-settings glass-taskmgr glass-run glass-winx glass-security \
+    glass-accessibility; do
   ln -sf "/usr/share/applications/$f.desktop" "/usr/share/kglobalaccel/$f.desktop"
 done
 ln -sf "$LOCAL/org.kde.dolphin.desktop" /usr/share/kglobalaccel/org.kde.dolphin.desktop

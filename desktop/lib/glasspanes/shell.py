@@ -41,6 +41,10 @@ class Adaptor(QDBusAbstractAdaptor):
         self.shell.power_user_menu()
 
     @pyqtSlot()
+    def ShutDown(self):  # noqa: N802
+        self.shell.show_shutdown()
+
+    @pyqtSlot()
     def Reload(self):  # noqa: N802
         self.shell.reload()
 
@@ -52,6 +56,7 @@ class Shell(QObject):
         self._start = None
         self._run = None
         self._security = None
+        self._shutdown = None
         self.adaptor = Adaptor(self)
         self.watcher = QFileSystemWatcher([prefs.FILE] if os.path.exists(prefs.FILE) else [])
         self.watcher.fileChanged.connect(lambda _p: QTimer.singleShot(200, self.reload))
@@ -96,6 +101,16 @@ class Shell(QObject):
         self._security = SecurityScreen()
         self._security.showFullScreen()
         self._security.activateWindow()
+
+    def show_shutdown(self):
+        """Alt+F4 on the desktop: Windows' 'Shut Down' box."""
+        from .shutdown import ShutDownDialog
+        if self._shutdown is not None and self._shutdown.isVisible():
+            self._shutdown.activateWindow()
+            return
+        self._shutdown = ShutDownDialog()
+        self._shutdown.show()
+        self._shutdown.activateWindow()
 
     def power_user_menu(self):
         """Win+X: the 'power user' menu Windows shows by the Start button."""

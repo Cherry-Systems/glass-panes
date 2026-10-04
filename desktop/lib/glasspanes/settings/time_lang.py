@@ -1,9 +1,8 @@
 """Time & language: date & time (time zone, automatic time), language & region, typing."""
 import datetime
-import locale
 import os
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QLocale, QTimer
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QLabel
 
@@ -78,10 +77,12 @@ class LanguagePage(Page):
 
     def build(self):
         lang = os.environ.get("LANG", "en_AU.UTF-8")
-        try:
-            name = locale.normalize(lang)
-        except ValueError:
-            name = lang
+        ql = QLocale(lang.split(".")[0])
+        name = QLocale.languageToString(ql.language())
+        if ql.language() == QLocale.Language.C:
+            name = "English"
+        elif "_" in lang:
+            name += f" ({QLocale.territoryToString(ql.territory())})"
         self.section("Language")
         self.row("local_language", "Glass Panes display language", name,
                  on_click=lambda: control_panel("kcm_regionandlang"))

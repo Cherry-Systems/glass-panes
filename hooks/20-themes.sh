@@ -23,6 +23,27 @@ sed -i -e 's/^translucent_windows=.*/translucent_windows=false/' -e 's/^blurring
 
 # Win11 icon theme (GPL-3.0): installs Win11, Win11-dark (and -light).
 bash "$EXT/win11-icons/install.sh" -d /usr/share/icons >/dev/null
+# The theme draws every generic web browser (and Wine's) with Microsoft Edge's logo, office
+# apps with Microsoft Office's and Okular with Outlook's. Swap each of those drawings, under
+# all the names that share it, for a neutral one.
+python3 - <<'EOF'
+import hashlib, os
+W = "/usr/share/icons/Win11/apps/scalable/"
+swaps = {W + "web-browser.svg": "/usr/share/glasspanes/icons/apps/web-browser.svg",
+         W + "applications-office.svg": "/usr/share/glasspanes/icons/apps/applications-office.svg",
+         W + "okular.svg": W + "evince.svg"}
+digest = lambda p: hashlib.md5(open(p, "rb").read()).hexdigest()
+by_hash = {digest(old): open(new, "rb").read() for old, new in swaps.items()}
+for theme in [d for d in os.listdir("/usr/share/icons") if d.startswith("Win11")]:
+    for dp, _ds, fs in os.walk(os.path.join("/usr/share/icons", theme)):
+        for f in fs:
+            p = os.path.join(dp, f)
+            if f.endswith(".svg") and not os.path.islink(p):
+                new = by_hash.get(digest(p))
+                if new:
+                    with open(p, "wb") as out:
+                        out.write(new)
+EOF
 for t in /usr/share/icons/Win11*; do
   gtk-update-icon-cache -q -f "$t" 2>/dev/null || true
 done

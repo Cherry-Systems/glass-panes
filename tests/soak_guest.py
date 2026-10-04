@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Runs inside the test VM for tests/soak_test.py: looks at windows and collects health stats.
 
-  soak_guest.py windows                 open windows as JSON
+  soak_guest.py windows [all]           open windows as JSON (all: every type, e.g. Start)
+  soak_guest.py closeid ID...           ask these windows to close
   soak_guest.py wait REGEX [SECS]       wait for a window whose title or class matches
   soak_guest.py gone REGEX [SECS]       wait until no window matches
   soak_guest.py close REGEX             ask matching windows to close (like Alt+F4)
@@ -133,7 +134,15 @@ def stats():
 def main():
     op, args = sys.argv[1], sys.argv[2:]
     if op == "windows":
-        print(json.dumps(windows()))
+        print(json.dumps(windows(all_types=args[:1] == ["all"])))
+    elif op == "closeid":
+        for i in args:
+            win = d.create_resource_object("window", int(i))
+            ev = protocol.event.ClientMessage(window=win, client_type=A["_NET_CLOSE_WINDOW"],
+                                              data=(32, [int(time.time()), 2, 0, 0, 0]))
+            root.send_event(ev, event_mask=X.SubstructureRedirectMask | X.SubstructureNotifyMask)
+        d.flush()
+        print("ok")
     elif op == "popups":
         print(json.dumps(popups()))
     elif op == "active":

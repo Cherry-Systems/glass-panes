@@ -198,10 +198,11 @@ def sorted_apps(apps):
 def wine_uninstall_entries():
     """Programs installed under Wine, from its uninstaller: list of (guid, name)."""
     try:
-        out = subprocess.run(["wine", "uninstaller", "--list"], capture_output=True, text=True,
-                             timeout=60, env=dict(os.environ, WINEDEBUG="-all")).stdout
+        r = subprocess.run(["wine", "uninstaller", "--list"], capture_output=True, text=True,
+                           timeout=60, env=dict(os.environ, WINEDEBUG="-all"))
     except (OSError, subprocess.TimeoutExpired):
         return []
+    out = r.stdout + r.stderr  # Wine's uninstaller prints the list on stderr
     entries = []
     for line in out.splitlines():
         if "|||" in line:

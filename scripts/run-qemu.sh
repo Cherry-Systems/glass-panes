@@ -7,6 +7,8 @@
 #   run-qemu.sh --offline     no network (rehearse installs like a PC without Wi-Fi set up)
 #   run-qemu.sh --headless    no window; drive it through the QMP socket (scripts/qmp.py)
 #   run-qemu.sh --gl          3D-accelerated virtual GPU, so window blur and transparency work
+#   run-qemu.sh --std-vga     plain VGA even when headless (virtio's display doesn't come back
+#                             from sleep, so use this to test suspend and resume)
 #   run-qemu.sh --iso FILE    boot another ISO (e.g. a copy, so a rebuild can't replace it mid-test)
 #   run-qemu.sh --vm-dir DIR  keep this VM's disks, UEFI vars and QMP socket in DIR (default build/vm)
 # Anything after `--` goes straight to QEMU.
@@ -21,7 +23,7 @@ DISK_SIZE="128G"
 OVMF_CODE="/usr/share/OVMF/OVMF_CODE_4M.fd"
 OVMF_VARS="/usr/share/OVMF/OVMF_VARS_4M.fd"
 
-uefi=no disks=no installed=no offline=no headless=no gl=no
+uefi=no disks=no installed=no offline=no headless=no gl=no stdvga=no
 extra=()
 while (($#)); do
   case "$1" in
@@ -31,6 +33,7 @@ while (($#)); do
     --offline) offline=yes ;;
     --headless) headless=yes ;;
     --gl) gl=yes ;;
+    --std-vga) stdvga=yes ;;
     --iso) ISO="$2"; shift ;;
     --vm-dir) VM_DIR="$2"; shift ;;
     --) shift; extra=("$@"); break ;;
@@ -45,7 +48,7 @@ gpu=virtio-vga
 [[ $gl == yes ]] && gpu=virtio-vga-gl
 # In a window, virtio follows the window size, and odd widths come out skewed. Standard VGA keeps
 # 1600x900 and the window scales it.
-[[ $headless == no && $gl == no ]] && gpu=VGA
+[[ ($headless == no || $stdvga == yes) && $gl == no ]] && gpu=VGA
 args=(-machine q35 -m 4G -smp 4 -vga none -device "$gpu,xres=1600,yres=900"
       -device qemu-xhci -device usb-tablet -device intel-hda -device hda-duplex
       -name "$OS_NAME" -qmp "unix:$VM_DIR/qmp.sock,server=on,wait=off")
