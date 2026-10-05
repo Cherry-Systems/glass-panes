@@ -32,6 +32,10 @@ def check_updates():
     return pkgs, apps, cherry
 
 
+def updates_count(n, what):
+    return f"{n} {what} update{'' if n == 1 else 's'}"
+
+
 def last_checked():
     try:
         with open(STAMP) as f:
@@ -107,11 +111,11 @@ class UpdatePage(Page):
             return
         sec = sum(1 for k, _ in pkgs if k == "Security")
         self.headline.setText("Updates available")
-        self.sub.setText(f"{len(pkgs)} system updates" + (f" ({sec} security)" if sec else "")
-                         + (f", {len(apps)} Store app updates" if apps else "")
-                         + (f", {len(cherry)} Cherry Store app updates" if cherry else ""))
+        counts = [(pkgs, "system", f" ({sec} security)" if sec else ""),
+                  (apps, "Store app", ""), (cherry, "Cherry Store app", "")]
+        self.sub.setText(", ".join(updates_count(len(items), what) + extra for items, what, extra in counts if items))
         self.set_icon("arrow_download", self.t.accent_fill)
-        self.action.setText("Download & install all")
+        self.action.setText("Download && install all")
         self.action.clicked.disconnect()
         self.action.clicked.connect(self.install)
         for kind, pid in pkgs[:30]:
