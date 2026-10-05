@@ -1,5 +1,5 @@
 """Glass Update: check for, download and install updates (system packages via PackageKit, Store apps
-via Flatpak). Updates never restart the PC on their own."""
+via Flatpak, then Cherry Store apps). Updates never restart the PC on their own."""
 import os
 import re
 import time
@@ -25,10 +25,11 @@ def check_updates():
             pkgs.append((m.group(1), m.group(2)))
     flat = run("flatpak", "remote-ls", "--updates", "--columns=name", timeout=120)
     apps = [x for x in flat.splitlines() if x.strip()]
+    cherry = re.findall(r"^(\S+): \S+ → \S+$", run("cherry", "update", "--check", timeout=120), re.M)
     os.makedirs(os.path.dirname(STAMP), exist_ok=True)
     with open(STAMP, "w") as f:
         f.write(str(time.time()))
-    return pkgs, apps
+    return pkgs, apps, cherry
 
 
 def last_checked():
@@ -71,7 +72,7 @@ class UpdatePage(Page):
                  on_click=lambda: spawn("plasma-discover", "--mode", "update"))
         self.note("Glass Panes never restarts your PC to install updates. If an update needs a restart, "
                   "you'll be asked, and it happens when you choose.")
-        self.pending = ([], [])
+        self.pending = ([], [], [])
 
     def set_icon(self, name, color):
         self.icon.setPixmap(style.icon_pixmap(name, color, 56, 2.0))
@@ -94,9 +95,9 @@ class UpdatePage(Page):
             self.sub.setText("Make sure you're connected to the internet, then try again.")
             self.set_icon("status", "#c42b1c")
             return
-        pkgs, apps = result
+        pkgs, apps, cherry = result
         self.pending = result
-        if not pkgs and not apps:
+        if not pkgs and not apps and not cherry:
             self.headline.setText("You're up to date")
             self.sub.setText(last_checked())
             self.set_icon("checkmark_circle", "#0f7b0f")
@@ -107,7 +108,8 @@ class UpdatePage(Page):
         sec = sum(1 for k, _ in pkgs if k == "Security")
         self.headline.setText("Updates available")
         self.sub.setText(f"{len(pkgs)} system updates" + (f" ({sec} security)" if sec else "")
-                         + (f", {len(apps)} Store app updates" if apps else ""))
+                         + (f", {len(apps)} Store app updates" if apps else "")
+                         + (f", {len(cherry)} Cherry Store app updates" if cherry else ""))
         self.set_icon("arrow_download", self.t.accent_fill)
         self.action.setText("Download & install all")
         self.action.clicked.disconnect()
@@ -117,9 +119,11 @@ class UpdatePage(Page):
             self.list_host.addWidget(SettingRow(self.t, "arrow_download", name, f"{kind} update"))
         if len(pkgs) > 30:
             self.list_host.addWidget(label(f"…and {len(pkgs) - 30} more", "secondary"))
+        for name in cherry:
+            self.list_host.addWidget(SettingRow(self.t, "arrow_download", name, "Cherry Store app update"))
 
     def install(self):
-        pkgs, apps = self.pending
+        pkgs, apps, _ = self.pending
         if pkgs:
             d = TaskDialog(self, "Installing updates", ["pkcon", "update", "-y", "--plain"],
                            "Updates installed.")
@@ -127,6 +131,8 @@ class UpdatePage(Page):
         if apps:
             TaskDialog(self, "Updating Store apps", ["flatpak", "update", "-y", "--noninteractive"],
                        "Store apps updated.").exec()
+        TaskDialog(self, "Updating Cherry Store apps", ["cherry", "update", "-y"],
+                   "Cherry Store apps updated.").exec()
         if os.path.exists("/run/reboot-required") or os.path.exists("/var/run/reboot-required"):
             self.headline.setText("Restart required")
             self.sub.setText("Restart your PC whenever it suits you to finish installing updates.")

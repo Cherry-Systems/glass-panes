@@ -136,3 +136,42 @@ EOF
 sed -i -e 's/ionice -C Idle/ionice -c 3/' -e "s/}'): do\$/}'); do/" /usr/bin/add-calamares-desktop-icon
 # glass-firstlogin puts the "Install Glass Panes" shortcut on the desktop itself.
 rm -f /etc/xdg/autostart/calamares-desktop-icon.desktop
+
+# Cherry Move: a transfer picked in the live session is handed to the new user, and restored at
+# their first login. The leading "-" keeps a failure here from failing the install.
+cat > /etc/calamares/modules/shellprocess@cherrytransfercopy.conf <<'EOF'
+---
+dontChroot: true
+timeout: 30
+script:
+  - "-mkdir -p ${ROOT}/var/lib/cherry"
+  - "-cp /var/lib/cherry/pending-transfer.json ${ROOT}/var/lib/cherry/pending-transfer.json"
+EOF
+cat > /etc/calamares/modules/shellprocess@cherrytransfer.conf <<'EOF'
+---
+dontChroot: false
+timeout: 30
+script:
+  - "-cherry-move --adopt-pending ${USER}"
+EOF
+if grep -q '^instances:' /etc/calamares/settings.conf; then
+  echo "settings.conf has an instances section now; add the Cherry Move ones to it" >&2
+  exit 1
+fi
+sed -i 's|^\( *\)- umount$|\1- shellprocess@cherrytransfercopy\n\1- shellprocess@cherrytransfer\n&|' \
+  /etc/calamares/settings.conf
+[ "$(grep -c 'shellprocess@cherrytransfer' /etc/calamares/settings.conf)" -eq 2 ]
+cat >> /etc/calamares/settings.conf <<'EOF'
+
+instances:
+- id: cherrytransfercopy
+  module: shellprocess
+  config: shellprocess@cherrytransfercopy.conf
+- id: cherrytransfer
+  module: shellprocess
+  config: shellprocess@cherrytransfer.conf
+EOF
+# Cherry Move's "Install" button would otherwise run plain "pkexec calamares" (there's no
+# install-debian), skipping the launcher that keeps the live session's language.
+mkdir -p /etc/cherry
+echo "INSTALLER=calamares-install-debian" > /etc/cherry/move.conf

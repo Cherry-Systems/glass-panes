@@ -86,3 +86,11 @@ python3-pyqt6
 python3-pyqt6.qtsvg
 python3-psutil
 python3-xlib
+
+# Cherry Store and Cherry Move come from vendor/cherry/ (build.sh installs them after this list).
+# Cherry Move only recommends these, and the build skips recommends: cloud drives and NAS (rclone),
+# finding NAS boxes on the network (avahi-utils). Their GTK 4 windows also need the SVG loader
+# (librsvg2-common), or Win11 icons such as the USB stick show as broken images.
+rclone
+avahi-utils
+librsvg2-common
