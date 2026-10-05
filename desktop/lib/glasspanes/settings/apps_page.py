@@ -127,8 +127,6 @@ class InstalledAppsPage(Page):
                 spawn("glass-wine", "--uninstaller")
                 return
             TaskDialog(self, f"Uninstalling {it['name']}", ["wine", "uninstaller", "--remove", it["ident"]]).exec()
-            from .. import wine
-            wine.remove_dead_shortcuts()
         elif it["kind"] == "flatpak":
             TaskDialog(self, f"Uninstalling {it['name']}", ["flatpak", "uninstall", "-y", "--noninteractive",
                                                             it["ident"]]).exec()

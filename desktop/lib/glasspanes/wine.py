@@ -4,7 +4,6 @@ The first time, it creates the Windows environment (~/.wine, the C: drive) with 
 using the .NET (Mono) and web (Gecko) add-ons shipped on the system so nothing is downloaded, then
 gives Windows programs the Windows 11 'Light' look and Segoe UI-compatible fonts."""
 import os
-import re
 import subprocess
 import sys
 import tempfile
@@ -134,68 +133,6 @@ def fix_shortcuts(since):
                         os.chmod(p, 0o755)
                     except OSError:
                         pass
-    remove_lnk_twins(desktop_dir(), since)
-    subprocess.run(["kbuildsycoca6"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
-def remove_lnk_twins(desk, since):
-    """Wine copies the installer's .lnk to the desktop as well as making a .desktop shortcut for it,
-    so each new shortcut would show twice. The .lnk goes only when its twin exists."""
-    try:
-        names = os.listdir(desk)
-    except OSError:
-        return
-    for fn in names:
-        p = os.path.join(desk, fn)
-        if (fn.lower().endswith(".lnk") and fn[:-4] + ".desktop" in names
-                and os.path.getmtime(p) >= since - 2):
-            try:
-                os.remove(p)
-            except OSError:
-                pass
-
-
-def _exists_nocase(root, parts):
-    path = root
-    for part in parts:
-        try:
-            names = os.listdir(path)
-        except OSError:
-            return False
-        hit = part if part in names else next((n for n in names if n.lower() == part.lower()), None)
-        if hit is None:
-            return False
-        path = os.path.join(path, hit)
-    return True
-
-
-def shortcut_is_dead(argv):
-    """True for a Wine shortcut whose Windows program is gone. Shortcuts to a drive that isn't there
-    (an unplugged USB stick) aren't dead."""
-    if not any(os.path.basename(a).startswith("wine") for a in argv[:3]):
-        return False
-    win = next((a for a in argv if re.match(r"^[A-Za-z]:\\", a)), None)
-    drives = os.path.join(PREFIX, "dosdevices")
-    if not win or not os.path.exists(os.path.join(drives, win[:2].lower())):
-        return False
-    return not _exists_nocase(drives, [win[:2].lower()] + [p for p in win[3:].split("\\") if p])
-
-
-def remove_dead_shortcuts():
-    """Wine's uninstaller leaves the Start menu and desktop shortcuts it made for a program."""
-    from . import apps
-    from .firstlogin import desktop_dir
-    desk = desktop_dir()
-    found = [os.path.join(desk, f) for f in os.listdir(desk)] if os.path.isdir(desk) else []
-    for root, _dirs, files in os.walk(os.path.expanduser("~/.local/share/applications/wine")):
-        found += [os.path.join(root, f) for f in files]
-    for p in found:
-        app = apps.parse(p) if p.endswith(".desktop") else None
-        if app and shortcut_is_dead(app.command()):
-            try:
-                os.remove(p)
-            except OSError:
-                pass
     subprocess.run(["kbuildsycoca6"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
@@ -223,18 +160,9 @@ def open_file(path, args):
         _error("This app can't run on your PC", str(e))
         return 1
     proc.wait()
-    wait_for_wine(30)
+    subprocess.run(["wineserver", "--wait"], env=ENV)
     fix_shortcuts(started)
     return 0
-
-
-def wait_for_wine(timeout):
-    """Waits for the programs an installer started to finish. Updater services some installers
-    leave running (Edge Update, Google Update) never do, so the wait is capped."""
-    try:
-        subprocess.run(["wineserver", "--wait"], env=ENV, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        pass
 
 
 def _error(title, text):
@@ -260,10 +188,7 @@ def main(argv=None):
         return subprocess.call(["xdg-open", os.path.join(PREFIX, "drive_c")])
     if argv[0] == "--uninstaller":
         prepare_with_window()
-        code = subprocess.call(["wine", "uninstaller"], env=ENV)
-        wait_for_wine(30)
-        remove_dead_shortcuts()
-        return code
+        return subprocess.call(["wine", "uninstaller"], env=ENV)
     path = argv[0]
     if path.startswith("file://"):
         from urllib.parse import unquote
