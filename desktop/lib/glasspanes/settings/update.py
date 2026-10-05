@@ -1,7 +1,9 @@
 """Glass Update: check for, download and install updates (system packages via PackageKit, Store apps
 via Flatpak, then Cherry Store apps). Updates never restart the PC on their own."""
+import datetime
 import os
 import re
+import shutil
 import time
 
 from PyQt6.QtCore import Qt
@@ -36,12 +38,17 @@ def updates_count(n, what):
     return f"{n} {what} update{'' if n == 1 else 's'}"
 
 
+def checked_text(t, now):
+    day = datetime.date.fromtimestamp(t)
+    today = datetime.date.fromtimestamp(now)
+    when = {today: "today", today - datetime.timedelta(days=1): "yesterday"}.get(day, "%-d %B")
+    return time.strftime(f"Last checked: {when}, %-I:%M %p", time.localtime(t))
+
+
 def last_checked():
     try:
         with open(STAMP) as f:
-            t = float(f.read())
-        return time.strftime("Last checked: today, %-I:%M %p" if time.time() - t < 86400
-                             else "Last checked: %-d %B, %-I:%M %p", time.localtime(t))
+            return checked_text(float(f.read()), time.time())
     except (OSError, ValueError):
         return "Check for updates to keep Glass Panes secure"
 
@@ -135,8 +142,9 @@ class UpdatePage(Page):
         if apps:
             TaskDialog(self, "Updating Store apps", ["flatpak", "update", "-y", "--noninteractive"],
                        "Store apps updated.").exec()
-        TaskDialog(self, "Updating Cherry Store apps", ["cherry", "update", "-y"],
-                   "Cherry Store apps updated.").exec()
+        if shutil.which("cherry"):
+            TaskDialog(self, "Updating Cherry Store apps", ["cherry", "update", "-y"],
+                       "Cherry Store apps updated.").exec()
         if os.path.exists("/run/reboot-required") or os.path.exists("/var/run/reboot-required"):
             self.headline.setText("Restart required")
             self.sub.setText("Restart your PC whenever it suits you to finish installing updates.")

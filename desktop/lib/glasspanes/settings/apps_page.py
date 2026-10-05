@@ -15,7 +15,8 @@ from .util import Page, TaskDialog, control_panel, in_background, run, spawn
 # Removing these would break the desktop itself.
 PROTECTED = {"plasma-workspace", "plasma-desktop", "kwin-x11", "sddm", "systemsettings", "python3",
              "python3-pyqt6", "konsole", "dolphin", "plasma-discover", "network-manager", "pipewire",
-             "calamares", "wine", "wine64", "libwine", "kde-cli-tools", "kinfocenter", "breeze"}
+             "calamares", "wine", "wine64", "libwine", "kde-cli-tools", "kinfocenter", "breeze",
+             "cherry-store-client"}
 ESSENTIAL_PREFIXES = ("glass-", "org.kde.plasma", "kcm_", "calamares")
 
 
@@ -126,6 +127,8 @@ class InstalledAppsPage(Page):
                 spawn("glass-wine", "--uninstaller")
                 return
             TaskDialog(self, f"Uninstalling {it['name']}", ["wine", "uninstaller", "--remove", it["ident"]]).exec()
+            from .. import wine
+            wine.remove_dead_shortcuts()
         elif it["kind"] == "flatpak":
             TaskDialog(self, f"Uninstalling {it['name']}", ["flatpak", "uninstall", "-y", "--noninteractive",
                                                             it["ident"]]).exec()
