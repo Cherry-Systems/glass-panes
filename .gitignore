@@ -1,7 +1,7 @@
 build/
 out/
 __pycache__/
-# Cherry Move's apps for the old computer (45 MB of binaries from the Cherry kit); only its README is kept.
-vendor/cherry/CherryMove/*
-!vendor/cherry/CherryMove/README.txt
+# The Cherry kit's large files: the old-computer apps (45 MB) and the test transfer stick.
+vendor/cherry-kit/for-the-usb-stick/
+vendor/cherry-kit/testing/
 *.pyc

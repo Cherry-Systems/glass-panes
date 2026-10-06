@@ -26,7 +26,7 @@ No Microsoft logos, Edge or Copilot: Glass Panes has its own logo and artwork.
 | Windows Easy Transfer / moving to a new PC | Cherry Move (`CherryMove/` on the install USB has the app for the old Windows, Mac or Linux computer) |
 
 The Cherry Store (apps published by anyone, installed through apt) is included too, and Glass Update
-keeps its apps up to date. Both Cherry apps come from Cherry Systems' kit in `vendor/cherry/`.
+keeps its apps up to date. Both Cherry apps come from Cherry Systems' kit in `vendor/cherry-kit/`.
 
 Keyboard shortcuts match Windows: Win (Start), Win+S, Win+E, Win+I, Win+R, Win+X, Win+L, Win+D,
 Win+M, Win+Shift+M, Win+Home, Win+Tab, Win+Up/Down/Left/Right, Win+Ctrl+D, Win+Ctrl+F4, Win+A, Win+N,

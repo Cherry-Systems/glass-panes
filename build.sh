@@ -15,6 +15,7 @@ ROOTFS="$WORK/rootfs"
 ISO_DIR="$WORK/iso"
 CACHE="$WORK/cache"
 EXT="$CACHE/ext"
+CHERRY_KIT="$ROOT_DIR/vendor/cherry-kit"
 OUT_DIR="$ROOT_DIR/out"
 ISO="$OUT_DIR/${OS_ID}-${OS_VERSION}-${ARCH}.iso"
 ISO_LABEL="$(printf '%s_%s' "$OS_ID" "$OS_VERSION" | tr 'a-z.-' 'A-Z__' | cut -c1-32)"
@@ -128,15 +129,8 @@ in_chroot apt-get update
 in_chroot apt-get install -y --no-install-recommends "${PACKAGES[@]}"
 
 log "Installing the Cherry Store and Cherry Move"
-CHERRY_DEBS=(vendor/cherry/cherry-store.deb vendor/cherry/cherry-move_*_all.deb)
-for f in "${CHERRY_DEBS[@]}" vendor/cherry/CherryMove/{CherryMove-Setup.exe,CherryMove.dmg,README.txt}; do
-  [[ -f $f ]] || die "missing $f (copy the Cherry kit into vendor/cherry/)"
-done
-for deb in "${CHERRY_DEBS[@]}"; do
-  cp "$deb" "$ROOTFS/tmp/"
-done
-in_chroot apt-get install -y --no-install-recommends "${CHERRY_DEBS[@]/#vendor\/cherry//tmp}"
-rm -f "${CHERRY_DEBS[@]/#vendor\/cherry/$ROOTFS/tmp}"
+[[ -x $CHERRY_KIT/install-cherry-apps.sh ]] || die "missing $CHERRY_KIT (copy the Cherry kit there)"
+"$CHERRY_KIT/install-cherry-apps.sh" "$ROOTFS"
 
 if [[ $INSTALLER == yes ]]; then
   log "Building the installer's offline package repository"
@@ -205,17 +199,11 @@ for hook in hooks/*.sh; do
   rm -f "$ROOTFS/tmp/hook.sh"
 done
 
-# The Cherry packages rely on these; trust and pending transfers are per machine, so nothing may
-# be recorded in /var/lib/cherry, and Cherry OS's own cherry-desktop conflicts with the store.
+# Nothing after the install may change the Cherry packages' files. Trust and pending transfers are
+# per machine, so nothing may be recorded in /var/lib/cherry.
 log "Checking the Cherry Store and Cherry Move setup"
-for pkg in cherry-store-client cherry-move rclone avahi-utils; do
-  in_chroot dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "ok installed" || die "$pkg is not installed"
-done
-! in_chroot dpkg-query -W -f='${Status}' cherry-desktop 2>/dev/null | grep -q "ok installed" \
-  || die "cherry-desktop is installed"
+"$CHERRY_KIT/check-cherry-apps.sh" --root "$ROOTFS" || die "check-cherry-apps.sh failed (see above)"
 [[ -z "$(ls -A "$ROOTFS/var/lib/cherry" 2>/dev/null)" ]] || die "/var/lib/cherry is not empty"
-[[ -L "$ROOTFS/etc/systemd/system/timers.target.wants/cherry-store-self-update.timer" ]] \
-  || die "the Cherry Store's self-update timer isn't enabled"
 
 # Debian ships Wine's Windows DLLs with debug info, and Wine copies them into every user's
 # Windows folder: stripping takes them from about 1.3 GB to 450 MB.
@@ -256,10 +244,7 @@ LIVE_ARGS+=" live-config.keyboard-layouts=$KEYBOARD_LAYOUT"
 sed -e "s|@OS_NAME@|$OS_NAME|g" -e "s|@OS_VERSION@|$OS_VERSION|g" -e "s|@LIVE_ARGS@|$LIVE_ARGS|g" \
   config/grub.cfg.in > "$ISO_DIR/boot/grub/grub.cfg"
 # Cherry Move for the old computer, at the top of the USB stick where Windows and macOS show it.
-cp -r --no-preserve=ownership vendor/cherry/CherryMove "$ISO_DIR/"
-sed "s/Cherry OS/$OS_NAME/g" vendor/cherry/CherryMove/README.txt \
-  | awk 'NR == 1 { title = length($0) } NR == 2 && /^=+$/ { $0 = ""; while (length($0) < title) $0 = $0 "=" } 1' \
-  > "$ISO_DIR/CherryMove/README.txt"
+"$CHERRY_KIT/add-cherrymove-to-iso.sh" "$ISO_DIR" "$OS_NAME"
 # Joliet keeps long file names ("CherryMove-Setup.exe") readable on Windows.
 grub-mkrescue -o "$ISO" "$ISO_DIR" -- -volid "$ISO_LABEL" -joliet on
 chown "${SUDO_UID:-0}:${SUDO_GID:-0}" "$OUT_DIR" "$ISO"
