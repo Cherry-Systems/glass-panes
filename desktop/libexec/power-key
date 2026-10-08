@@ -1,0 +1,101 @@
+#!/usr/bin/python3
+"""The power button while the PC is locked. Plasma's X11 lock screen holds the keyboard and passes
+PowerDevil brightness and sleep keys only, so the power button did nothing there; on Windows it does
+what Power Options say. This reads the power button devices (never a keyboard) and, when the active
+session is locked, hands the press to PowerDevil, which shuts down, sleeps or does nothing as set."""
+import os
+import pwd
+import re
+import select
+import struct
+import subprocess
+import time
+
+EVENT = struct.Struct("llHHi")  # struct input_event
+EV_KEY, KEY_POWER, KEY_A = 1, 116, 30
+WAKE_GRACE = 5  # waking the PC with the power button sends a press too; that one only wakes it
+
+
+def has_key(bitmap, code):
+    words = bitmap.split()
+    i = len(words) - 1 - code // 64
+    return i >= 0 and bool(int(words[i], 16) >> (code % 64) & 1)
+
+
+def power_buttons():
+    """Event devices with a power key and no letter keys: ACPI power buttons and laptop hotkey
+    devices, but not keyboards (some have a power key too)."""
+    found = []
+    try:
+        with open("/proc/bus/input/devices") as f:
+            blocks = f.read().split("\n\n")
+    except OSError:
+        return found
+    for block in blocks:
+        keys = re.search(r"^B: KEY=(.*)$", block, re.M)
+        handlers = re.search(r"^H: Handlers=(.*)$", block, re.M)
+        if keys and handlers and has_key(keys.group(1), KEY_POWER) and not has_key(keys.group(1), KEY_A):
+            found += ["/dev/input/" + h for h in handlers.group(1).split() if h.startswith("event")]
+    return found
+
+
+def locked_user():
+    """(name, uid) of the active session's user when that session is locked, else None."""
+    def show(*args):
+        return subprocess.run(["loginctl", *args, "--value"], capture_output=True, text=True,
+                              timeout=5).stdout.split("\n")
+    try:
+        sid = show("show-seat", "seat0", "-p", "ActiveSession")[0].strip()
+        if not sid:
+            return None
+        locked, name = (v.strip() for v in show("show-session", sid, "-p", "LockedHint", "-p", "Name")[:2])
+        return (name, pwd.getpwnam(name).pw_uid) if locked == "yes" else None
+    except (OSError, subprocess.SubprocessError, KeyError, ValueError):
+        return None
+
+
+def press_for(name, uid):
+    subprocess.run(["setpriv", f"--reuid={uid}", f"--regid={pwd.getpwnam(name).pw_gid}", "--init-groups",
+                    "env", f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus",
+                    "qdbus6", "org.kde.kglobalaccel", "/component/org_kde_powerdevil",
+                    "org.kde.kglobalaccel.Component.invokeShortcut", "PowerOff"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+
+
+def asleep_total():
+    """Seconds the PC has spent asleep since it started."""
+    return time.clock_gettime(time.CLOCK_BOOTTIME) - time.monotonic()
+
+
+def main():
+    fds = []
+    while not fds:
+        for path in power_buttons():
+            try:
+                fds.append(os.open(path, os.O_RDONLY))
+            except OSError:
+                pass
+        if not fds:
+            time.sleep(30)
+    slept, woke = asleep_total(), 0.0
+    while True:
+        ready, _, _ = select.select(fds, [], [], 1.0)
+        now = asleep_total()
+        if now > slept + 0.5:
+            woke = time.monotonic()
+        slept = now
+        for fd in ready:
+            data = os.read(fd, EVENT.size * 64)
+            for i in range(0, len(data) - EVENT.size + 1, EVENT.size):
+                _s, _us, kind, code, value = EVENT.unpack_from(data, i)
+                if kind != EV_KEY or code != KEY_POWER or value != 1:
+                    continue
+                if time.monotonic() - woke < WAKE_GRACE:
+                    continue
+                user = locked_user()
+                if user:
+                    press_for(*user)
+
+
+if __name__ == "__main__":
+    main()

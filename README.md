@@ -16,6 +16,8 @@ No Microsoft logos, Edge or Copilot: Glass Panes has its own logo and artwork.
 | Task Manager (Ctrl+Shift+Esc) | `taskmgr.py` |
 | Run (Win+R), Win+X menu, Ctrl+Alt+Del screen | `rundialog.py`, `shell.py`, `security.py` |
 | Quick Settings (Win+A, or the network and volume icons): Wi-Fi, Bluetooth, night light, energy saver, volume, brightness | `quicksettings.py` |
+| Snap layouts (Win+Z) | `snaplayouts.py` |
+| Narrator (Win+Ctrl+Enter) | Orca screen reader (`narrator.py`) |
 | Right-click menus for the taskbar, desktop and Recycle Bin | `shell.py`, with small patches to Plasma's QML (`overlay/usr/share/glasspanes/plasma/patch-qml.py`) |
 | Sign-in and lock screens (Win+L) | SDDM theme and Plasma lock screen (`overlay/usr/share/sddm/themes/glasspanes`, `overlay/usr/share/glasspanes/lockscreen`) |
 | Recycle Bin | KDE Trash, renamed |
@@ -29,9 +31,10 @@ The Cherry Store (apps published by anyone, installed through apt) is included t
 keeps its apps up to date. Both Cherry apps come from Cherry Systems' kit in `vendor/cherry-kit/`.
 
 Keyboard shortcuts match Windows: Win (Start), Win+S, Win+E, Win+I, Win+R, Win+X, Win+L, Win+D,
-Win+M, Win+Shift+M, Win+Home, Win+Tab, Win+Up/Down/Left/Right, Win+Ctrl+D, Win+Ctrl+F4, Win+A, Win+N,
-Win+Shift+S, Alt+Tab, Alt+F4, Ctrl+Esc, Ctrl+Shift+Esc and Ctrl+Alt+Del. Right-clicking Start opens the
-Win+X menu.
+Win+M, Win+Shift+M, Win+Home, Win+Tab, Win+Up/Down/Left/Right, Win+Z, Win+Ctrl+D, Win+Ctrl+F4, Win+A,
+Win+N, Win+Shift+S, Win+Ctrl+Enter, Alt+Tab, Alt+F4, Ctrl+Esc, Ctrl+Shift+Esc and Ctrl+Alt+Del.
+Right-clicking Start opens the Win+X menu. Win+H says voice typing isn't available (there's no speech
+recognition yet), and Win+K (Cast) isn't used.
 
 ## Building
 

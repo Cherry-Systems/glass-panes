@@ -98,3 +98,21 @@ registerShortcut("Glass Panes Close Desktop", "Close the Current Virtual Desktop
     if (workspace.desktops.length > 1)
         workspace.removeDesktop(workspace.currentDesktop);
 });
+
+// The Glass shell shows the layouts and moves the window; it needs to know where the window is.
+registerShortcut("Glass Panes Snap Layouts", "Snap Layouts", "Meta+Z", function () {
+    var w = normalWindow();
+    if (!w || !w.moveable || !w.resizeable)
+        return;
+    var g = w.frameGeometry;
+    callDBus("org.glasspanes.Shell", "/Shell", "org.glasspanes.Shell", "SnapLayouts",
+             Math.round(g.x), Math.round(g.y), Math.round(g.width), Math.round(g.height));
+});
+
+registerShortcut("Glass Panes Voice Typing", "Voice Typing", "Meta+H", function () {
+    callDBus("org.glasspanes.Shell", "/Shell", "org.glasspanes.Shell", "VoiceTyping");
+});
+
+registerShortcut("Glass Panes Narrator", "Turn Narrator On or Off", "Meta+Ctrl+Return", function () {
+    callDBus("org.glasspanes.Shell", "/Shell", "org.glasspanes.Shell", "Narrator");
+});

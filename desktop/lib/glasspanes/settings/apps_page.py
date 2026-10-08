@@ -127,6 +127,8 @@ class InstalledAppsPage(Page):
                 spawn("glass-wine", "--uninstaller")
                 return
             TaskDialog(self, f"Uninstalling {it['name']}", ["wine", "uninstaller", "--remove", it["ident"]]).exec()
+            from .. import wine
+            wine.remove_dead_shortcuts()
         elif it["kind"] == "flatpak":
             TaskDialog(self, f"Uninstalling {it['name']}", ["flatpak", "uninstall", "-y", "--noninteractive",
                                                             it["ident"]]).exec()
@@ -231,7 +233,11 @@ class StartupPage(Page):
                 name = cp.get("Desktop Entry", "Name", fallback=fid)
                 hidden = cp.get("Desktop Entry", "Hidden", fallback="false").lower() == "true"
                 icon = cp.get("Desktop Entry", "Icon", fallback="")
+                only = cp.get("Desktop Entry", "OnlyShowIn", fallback="").split(";")
+                never = cp.get("Desktop Entry", "NotShowIn", fallback="").split(";")
             except configparser.Error:
+                continue
+            if (any(only) and "KDE" not in only) or "KDE" in never:
                 continue
             sw = ToggleSwitch(self.t, not hidden)
             sw.toggled.connect(lambda on, f=fid, p=path: self.set_enabled(f, p, on))

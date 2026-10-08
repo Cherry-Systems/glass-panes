@@ -71,6 +71,10 @@ partitionmanager
 firefox-esr
 kdialog
 
+# Narrator (Win+Ctrl+Enter): the Orca screen reader and a voice for it
+orca
+speech-dispatcher-espeak-ng
+
 # Fonts (Selawik is installed by hooks/10-themes.sh)
 fonts-noto-core
 fonts-noto-color-emoji
@@ -86,6 +90,7 @@ python3-pyqt6
 python3-pyqt6.qtsvg
 python3-psutil
 python3-xlib
+libnotify-bin
 
 # Cherry Store and Cherry Move come from vendor/cherry-kit/ (build.sh runs its install script after
 # this list). Their GTK 4 windows need the SVG loader (librsvg2-common), or Win11 icons such as the

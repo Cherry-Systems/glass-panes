@@ -80,6 +80,30 @@ class WineTest(unittest.TestCase):
         self.assertEqual(wine.command_for("/d/run.bat", ["x"]), ["wine", "cmd", "/c", "/d/run.bat", "x"])
         self.assertEqual(wine.command_for("/d/app.exe", []), ["wine", "/d/app.exe"])
 
+    def test_desktop_lnk_twins_removed(self):
+        with tempfile.TemporaryDirectory() as d:
+            for fn in ("App.lnk", "App.desktop", "Lone.lnk", "Old.lnk", "Old.desktop"):
+                open(os.path.join(d, fn), "w").close()
+            os.utime(os.path.join(d, "Old.lnk"), (1, 1))
+            wine.remove_lnk_twins(d, os.path.getmtime(os.path.join(d, "App.lnk")))
+            self.assertEqual(sorted(os.listdir(d)), ["App.desktop", "Lone.lnk", "Old.desktop", "Old.lnk"])
+
+    def test_dead_shortcuts(self):
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "drive_c", "Program Files", "App"))
+            open(os.path.join(d, "drive_c", "Program Files", "App", "app.exe"), "w").close()
+            os.makedirs(os.path.join(d, "dosdevices"))
+            os.symlink("../drive_c", os.path.join(d, "dosdevices", "c:"))
+            old, wine.PREFIX = wine.PREFIX, d
+            try:
+                run = ["env", "WINEPREFIX=" + d, "wine"]
+                self.assertFalse(wine.shortcut_is_dead(run + ["C:\\PROGRAM FILES\\app\\APP.EXE"]))
+                self.assertTrue(wine.shortcut_is_dead(run + ["C:\\Program Files\\Gone\\gone.exe"]))
+                self.assertFalse(wine.shortcut_is_dead(run + ["E:\\stick\\tool.exe"]))
+                self.assertFalse(wine.shortcut_is_dead(["dolphin", "C:\\Program Files\\Gone\\gone.exe"]))
+            finally:
+                wine.PREFIX = old
+
 
 class TaskbarTest(unittest.TestCase):
     S, T, TRAY, CLOCK = ("org.kde.plasma.panelspacer", "org.kde.plasma.icontasks",

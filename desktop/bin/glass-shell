@@ -7,6 +7,8 @@
 # glass-shell security        Ctrl+Alt+Del screen
 # glass-shell shutdown        'Shut Down Glass Panes' box (Alt+F4 on the desktop)
 # glass-shell quick-settings  open or close Quick Settings (Win+A, network/volume/battery icons)
+# glass-shell narrator        turn Narrator (Orca) on or off (Win+Ctrl+Enter)
+# glass-shell voice-typing    say voice typing isn't available (Win+H)
 # glass-shell reload          re-read settings (after changing theme)
 export PYTHONPATH=/usr/lib/glasspanes${PYTHONPATH:+:$PYTHONPATH}
 
@@ -19,8 +21,11 @@ case "${1:-}" in
   security) method=Security ;;
   shutdown) method=ShutDown ;;
   quick-settings) method=QuickSettings ;;
+  narrator) method=Narrator ;;
+  voice-typing) method=VoiceTyping ;;
   reload) method=Reload ;;
-  *) echo "usage: glass-shell [toggle-start|search|run|winx|security|shutdown|quick-settings|reload]" >&2; exit 2 ;;
+  *) echo "usage: glass-shell [toggle-start|search|run|winx|security|shutdown|quick-settings|narrator|voice-typing|reload]" >&2
+     exit 2 ;;
 esac
 
 if ! dbus-send --session --type=method_call --dest=org.glasspanes.Shell /Shell \

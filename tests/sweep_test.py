@@ -341,10 +341,10 @@ SHORTCUTS = [
     ("Win+Shift+S (Snipping Tool)", ["meta_l-shift-s"]), ("Print Screen", ["print"]),
     ("Win+Print Screen (save screenshot)", ["meta_l-print"]), ("Ctrl+Shift+Esc (Task Manager)", ["ctrl-shift-esc"]),
     ("Ctrl+Alt+Del", ["ctrl-alt-delete"]), ("Alt+F4 on the desktop (shut down box)", ["alt-f4"]),
-    ("Win+P (project / displays)", ["meta_l-p"]), ("Win+K (cast)", ["meta_l-k"]),
+    ("Win+P (project / displays)", ["meta_l-p"]),
     ("Win+U (accessibility settings)", ["meta_l-u"]), ("Win++ (magnifier)", ["meta_l-equal"]),
     ("Win+Ctrl+Enter (narrator)", ["meta_l-ctrl-ret"]), ("Win+Ctrl+D (new virtual desktop)", ["meta_l-ctrl-d"]),
-    ("Win+H (dictation)", ["meta_l-h"]), ("Win+G (game bar)", ["meta_l-g"]), ("Win+L (lock)", ["meta_l-l"]),
+    ("Win+H (voice typing)", ["meta_l-h"]), ("Win+G (game bar)", ["meta_l-g"]), ("Win+L (lock)", ["meta_l-l"]),
 ]
 DESKTOP_COUNT = "qdbus6 org.kde.KWin /VirtualDesktopManager org.kde.KWin.VirtualDesktopManager.count"
 
@@ -376,7 +376,19 @@ WINDOW_SHORTCUTS = [
     ("Win+1 (first taskbar app)", ["meta_l-1"], False, None),
     ("Alt+F4 (close window)", ["alt-f4"], False, lambda w: w is None),
     ("Win+Z (snap layouts)", ["meta_l-z"], False, None),
+    ("Win+Z, 1, 1 (snap to the left half)", ["meta_l-z", "1", "1"], False,
+     lambda w: snapped(w, 0, 800)),
+    ("Win+Z, 3, 3 (snap to the right third)", ["meta_l-z", "3", "3"], False,
+     lambda w: snapped(w, 1067, 533)),
 ]
+
+
+def snapped(w, x, width):
+    """Notepad's frame starts at x and is `width` wide, from the top of the screen to the taskbar."""
+    if w is None or maximized(w):
+        return False
+    fx, fy, fw, fh = w["frame"]
+    return abs(fx - x) <= 2 and abs(fw - width) <= 2 and fy <= 1 and 800 < fh < 900
 
 
 def notepad():
@@ -413,6 +425,8 @@ def sweep_shortcuts():
         keys("esc")
         if "magnifier" in label:
             keys("meta_l-0")  # back to actual size, or every later screenshot is zoomed in
+        if "narrator" in label or "voice typing" in label:
+            keys(*combo)  # both toggle: Narrator off again, the voice typing panel closed
         time.sleep(1)
         tidy()
         if "virtual desktop" in label:
@@ -443,7 +457,7 @@ def sweep_shortcuts():
             change = diff(a, b)
             if check:
                 w = notepad()
-                seen = "closed" if w is None else f"state {w['state']}, active {w['active']}"
+                seen = "closed" if w is None else f"state {w['state']}, active {w['active']}, frame {w.get('frame')}"
                 return ("ok" if check(w) else "fail"), f"Notepad: {seen}; screen change {change:.0f}", path
             return ("look" if change > 2 else "fail"), f"screen change {change:.0f}", path
         attempt("Shortcuts", label, press_with_window)

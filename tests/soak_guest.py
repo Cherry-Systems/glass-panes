@@ -44,7 +44,11 @@ def info(w):
         pid = prop(w, "_NET_WM_PID")
         types = prop(w, "_NET_WM_WINDOW_TYPE")
         state = prop(w, "_NET_WM_STATE")
+        g = w.get_geometry()
+        pos = root.translate_coords(w, 0, 0)
+        ext = list(prop(w, "_NET_FRAME_EXTENTS") or [0, 0, 0, 0])
         return {"id": w.id, "title": title, "class": cls[1] or cls[0],
+                "frame": [pos.x - ext[0], pos.y - ext[2], g.width + ext[0] + ext[1], g.height + ext[2] + ext[3]],
                 "pid": int(pid[0]) if pid is not None and len(pid) else None,
                 "types": [d.get_atom_name(t) for t in types] if types is not None else [],
                 "state": [d.get_atom_name(s).replace("_NET_WM_STATE_", "") for s in state]

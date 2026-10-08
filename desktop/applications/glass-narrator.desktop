@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Narrator
+Comment=Read out what's on the screen (turn on or off with Win+Ctrl+Enter)
+Keywords=screen reader;orca;accessibility;speech;
+Exec=glass-shell narrator
+Icon=preferences-desktop-accessibility
+Categories=Utility;Accessibility;
+StartupNotify=false

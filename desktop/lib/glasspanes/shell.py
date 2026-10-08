@@ -1,5 +1,5 @@
-"""glass-shell: the always-running helper behind the Windows key, Start, Win+R, Win+X and
-Ctrl+Alt+Del. Keeps Start loaded so it opens instantly, and listens on D-Bus (org.glasspanes.Shell)."""
+"""glass-shell: the always-running helper behind the Windows key, Start, Win+R, Win+X, Win+Z, Win+H,
+Win+Ctrl+Enter and Ctrl+Alt+Del. Keeps Start loaded so it opens instantly, and listens on D-Bus (org.glasspanes.Shell)."""
 import os
 import subprocess
 import sys
@@ -68,6 +68,19 @@ class Adaptor(QDBusAbstractAdaptor):
     def ShutDown(self):  # noqa: N802
         self.shell.show_shutdown()
 
+    @pyqtSlot(int, int, int, int)
+    def SnapLayouts(self, x, y, w, h):  # noqa: N802
+        self.shell.snap_layouts.show_for(x, y, w, h)
+
+    @pyqtSlot()
+    def VoiceTyping(self):  # noqa: N802
+        self.shell.voice_typing.toggle()
+
+    @pyqtSlot()
+    def Narrator(self):  # noqa: N802
+        from . import narrator
+        narrator.toggle()
+
     @pyqtSlot()
     def Reload(self):  # noqa: N802
         self.shell.reload()
@@ -82,6 +95,8 @@ class Shell(QObject):
         self._security = None
         self._shutdown = None
         self._quick_settings = None
+        self._snap_layouts = None
+        self._voice_typing = None
         self.adaptor = Adaptor(self)
         self.watcher = QFileSystemWatcher([prefs.FILE] if os.path.exists(prefs.FILE) else [])
         self.watcher.fileChanged.connect(lambda _p: QTimer.singleShot(200, self.reload))
@@ -99,6 +114,20 @@ class Shell(QObject):
             from .quicksettings import QuickSettings
             self._quick_settings = QuickSettings()
         return self._quick_settings
+
+    @property
+    def snap_layouts(self):
+        if self._snap_layouts is None:
+            from .snaplayouts import SnapLayouts
+            self._snap_layouts = SnapLayouts()
+        return self._snap_layouts
+
+    @property
+    def voice_typing(self):
+        if self._voice_typing is None:
+            from .voicetyping import VoiceTyping
+            self._voice_typing = VoiceTyping()
+        return self._voice_typing
 
     def reload(self):
         style.apply_app_style(self.app)
