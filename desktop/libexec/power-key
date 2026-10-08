@@ -42,14 +42,14 @@ def power_buttons():
 def locked_user():
     """(name, uid) of the active session's user when that session is locked, else None."""
     def show(*args):
-        return subprocess.run(["loginctl", *args, "--value"], capture_output=True, text=True,
-                              timeout=5).stdout.split("\n")
+        out = subprocess.run(["loginctl", *args], capture_output=True, text=True, timeout=5).stdout
+        return dict(line.split("=", 1) for line in out.splitlines() if "=" in line)
     try:
-        sid = show("show-seat", "seat0", "-p", "ActiveSession")[0].strip()
+        sid = show("show-seat", "seat0", "-p", "ActiveSession").get("ActiveSession", "")
         if not sid:
             return None
-        locked, name = (v.strip() for v in show("show-session", sid, "-p", "LockedHint", "-p", "Name")[:2])
-        return (name, pwd.getpwnam(name).pw_uid) if locked == "yes" else None
+        s = show("show-session", sid, "-p", "LockedHint", "-p", "Name")
+        return (s["Name"], pwd.getpwnam(s["Name"]).pw_uid) if s.get("LockedHint") == "yes" else None
     except (OSError, subprocess.SubprocessError, KeyError, ValueError):
         return None
 

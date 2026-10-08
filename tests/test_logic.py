@@ -180,6 +180,42 @@ class PatchQmlTest(unittest.TestCase):
                 self.assertNotEqual(open(out.name).read(), open(stock).read(), part)
 
 
+class PowerKeyTest(unittest.TestCase):
+    """desktop/libexec/power-key: which devices it reads, and when it passes the press on."""
+
+    @classmethod
+    def setUpClass(cls):
+        from importlib.machinery import SourceFileLoader
+        from importlib.util import module_from_spec, spec_from_loader
+        path = os.path.join(os.path.dirname(__file__), "..", "desktop", "libexec", "power-key")
+        loader = SourceFileLoader("power_key", path)
+        cls.pk = module_from_spec(spec_from_loader("power_key", loader))
+        loader.exec_module(cls.pk)
+
+    def test_power_button_but_not_keyboard(self):
+        power, keyboard = "8000 10000000000000 0", "402000002 3803078f800d001 feffffdfffefffff fffffffffffffffe"
+        self.assertTrue(self.pk.has_key(power, self.pk.KEY_POWER))
+        self.assertFalse(self.pk.has_key(power, self.pk.KEY_A))
+        self.assertTrue(self.pk.has_key(keyboard, self.pk.KEY_A))
+        self.assertFalse(self.pk.has_key("70000 0 0 0 0", self.pk.KEY_POWER))
+
+    def test_locked_user(self):
+        from unittest import mock
+        replies = {"show-seat": "ActiveSession=3\n"}
+
+        def fake(argv, **_kw):
+            return mock.Mock(stdout=replies[argv[1]])
+        root = self.pk.pwd.getpwuid(0).pw_name
+        with mock.patch.object(self.pk.subprocess, "run", fake):
+            # loginctl lists properties in its own order, not the order they were asked for
+            replies["show-session"] = f"Name={root}\nLockedHint=yes\n"
+            self.assertEqual(self.pk.locked_user(), (root, 0))
+            replies["show-session"] = f"Name={root}\nLockedHint=no\n"
+            self.assertIsNone(self.pk.locked_user())
+            replies["show-seat"] = "ActiveSession=\n"
+            self.assertIsNone(self.pk.locked_user())
+
+
 class TranslationTest(unittest.TestCase):
     """The MB/GB catalogues compile to .qm files that Qt reads."""
     ROOT = os.path.join(os.path.dirname(__file__), "..")

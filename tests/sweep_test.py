@@ -154,6 +154,11 @@ def attempt(area, name, fn):
 SKIP_APPS = r"log ?out|sign out|shut ?down|restart|sleep|lock|switch user"
 
 
+def orca_on():
+    """Narrator's screen reader is running (a zombie left by an old Orca doesn't count)."""
+    return run("ps -C orca -o stat= | grep -qv Z && echo on || echo off").strip().endswith("on")
+
+
 def sweep_apps():
     data = json.loads(run(f"{LIB} -c \"import json; from glasspanes import apps; "
                           "print(json.dumps([[a.id, a.name] for a in apps.sorted_apps(apps.all_apps())]))\"")
@@ -172,6 +177,10 @@ def sweep_apps():
             new = wait_new(before, 30)
             time.sleep(4)
             path = shot("app-" + re.sub(r"\W+", "-", name))
+            if name == "Narrator":  # no window; it turns the screen reader on, so turn it off again
+                on = orca_on()
+                run("glass-shell narrator; sleep 2")
+                return ("ok" if on and not orca_on() else "fail"), f"Orca on: {on}, off again: {not orca_on()}", path
             if not new:
                 err = run("cat /tmp/launch.log").strip()[-200:]
                 return "fail", f"no window within 30 s {err}", path
@@ -375,7 +384,8 @@ WINDOW_SHORTCUTS = [
     ("Alt+Tab (switch)", ["alt-tab"], True, lambda w: w is not None and w["active"]),
     ("Win+1 (first taskbar app)", ["meta_l-1"], False, None),
     ("Alt+F4 (close window)", ["alt-f4"], False, lambda w: w is None),
-    ("Win+Z (snap layouts)", ["meta_l-z"], False, None),
+    ("Win+Z (snap layouts)", ["meta_l-z"], False,
+     lambda w: any(p.get("title") == "Snap layouts" for p in guest("popups"))),
     ("Win+Z, 1, 1 (snap to the left half)", ["meta_l-z", "1", "1"], False,
      lambda w: snapped(w, 0, 800)),
     ("Win+Z, 3, 3 (snap to the right third)", ["meta_l-z", "3", "3"], False,
@@ -415,6 +425,8 @@ def sweep_shortcuts():
             if "virtual desktop" in label:
                 n = run(DESKTOP_COUNT).strip().splitlines()[-1:]
                 return ("ok" if n == ["2"] else "fail"), f"desktops now {n}", path
+            if "narrator" in label:
+                return ("ok" if orca_on() else "fail"), f"Orca running: {orca_on()}", path
             what = "; ".join(f"{w['title']} [{w['class']}]" for w in new)[:120]
             if locked:
                 tidy()
@@ -427,6 +439,10 @@ def sweep_shortcuts():
             keys("meta_l-0")  # back to actual size, or every later screenshot is zoomed in
         if "narrator" in label or "voice typing" in label:
             keys(*combo)  # both toggle: Narrator off again, the voice typing panel closed
+        if "narrator" in label:
+            time.sleep(3)
+            record("Shortcuts", "Win+Ctrl+Enter again (narrator off)", "fail" if orca_on() else "ok",
+                   f"Orca running: {orca_on()}")
         time.sleep(1)
         tidy()
         if "virtual desktop" in label:
