@@ -11,4 +11,6 @@ mkdir -p "$tree"
 rm -rf "$tree/CherryMove"
 tar -C "$tree" -xf "$kit/for-the-usb-stick/CherryMove.tar"
 NAME="$name" perl -pi -e 's/Cherry OS/$ENV{NAME}/g' "$tree/CherryMove/README.txt"
+# The title's ==== underline has to stay as long as the title.
+perl -0pi -e 's/\A([^\r\n]*)(\r?\n)=+/$1 . $2 . ("=" x length($1))/e' "$tree/CherryMove/README.txt"
 echo "Added $tree/CherryMove/ ($(du -sh "$tree/CherryMove" | cut -f1)). Its README.txt now says \"$name\"."

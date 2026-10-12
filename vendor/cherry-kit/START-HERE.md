@@ -1,7 +1,7 @@
 # Adding the Cherry Store and Cherry Move to your operating system
 
 This kit puts **Cherry Move** and the **Cherry Store** into a Debian- or Ubuntu-based OS, using
-exactly the same packages Cherry OS ships (the version is in the file names, e.g. `1.0.6`).
+exactly the same packages Cherry OS ships (the version is in the file names, e.g. `1.0.20`).
 Scripts do the work. Run them; don't recreate what they do by hand.
 
 Read this whole page before changing anything. Everything you need is here. **If something
@@ -179,6 +179,10 @@ Expected: about 35 `PASS` lines (one per file, plus package and setting checks),
 and the last line `All checks passed: Cherry Move and the Cherry Store are installed the same way
 as on Cherry OS <version>.` Include the whole output in your report.
 
+On a system that has already updated itself through the Cherry Store, a package can be newer than
+the kit's. That's a `PASS` (`… newer than the kit's …`), and that package's files aren't compared,
+because the store checked the newer ones against Cherry OS's signature. An *older* version is a `FAIL`.
+
 ### 7.2 The Cherry Store
 
 In a terminal:
@@ -202,7 +206,7 @@ Then:
 | `hello-cherry` | `Hello from the Cherry Store! (hello-cherry 1.0.1)` |
 | `cherry list` | Lists `hello-cherry`, `cherry-store-client <version>  by Cherry OS` and `cherry-move <version>  by Cherry OS` |
 | `cherry update -y` | `Everything is up to date.` (or it updates, if a newer release came out) |
-| `cherry remove hello-cherry` | Removes it (asks for your password). There's no `-y` option for `remove`. |
+| `cherry remove hello-cherry` | Removes it (asks for your password, unless sudo still remembers it from a few minutes ago; `sudo -k` first makes it ask). There's no `-y` option for `remove`. |
 
 Then open **Cherry Store** from the app menu:
 
@@ -211,7 +215,8 @@ Then open **Cherry Store** from the app menu:
 - type "hello" in the "Search the Cherry Store" box, open `hello-cherry` and click **Install**:
   your desktop's password window appears, saying "Authentication is required to install or
   remove apps"; after the password, it installs;
-- the "Installed apps" list shows it; **Remove** removes it.
+- the "Installed apps" list shows it; **Remove** removes it (the password window only appears
+  again if more than a few minutes have passed since installing).
 
 ### 7.3 Cherry Move: the app
 
@@ -228,8 +233,10 @@ Don't sign in to any cloud account; that's not part of this test.
 
 ### 7.4 Cherry Move: a transfer stick (`testing/test-transfer-stick.img`)
 
-The image holds a real transfer made with this same Cherry Move version, from a computer called
-`sams-old-pc` running Debian 13. Its contents:
+The image holds a real transfer made on 6 Oct 2026 with an older Cherry Move (1.0.6), from a computer
+called `sams-old-pc` running Debian 13. The stick doesn't change between kits on purpose: newer
+Cherry Move versions must still restore transfers made by older ones, so this also tests that. Its
+contents:
 
 | File | Restored to |
 |---|---|
@@ -264,6 +271,10 @@ Its transfer code (you only need it for the terminal test, because the stick car
    `4 files from sams-old-pc (Debian GNU/Linux 13 (trixie)) are back in your home folder.`
    Check the four files are where the table says, and that `~/Documents/cherry-move-test.txt`
    contains `If you can read this on the new computer, the transfer worked.`
+   The page also has a **Reinstall your apps (4)** button and a ticked box, "Call this computer
+   “sams-old-pc” like the old one…". Neither is part of this test: the box only renames the
+   computer if you click **Reinstall your apps**, so close the window (**Finish** or its X) and
+   the computer keeps its name.
 4. Unplug and plug the stick back in. Cherry Move should **not** open again (those files are
    already back).
 5. **Terminal test** (works without a desktop): mount the stick, then
@@ -285,7 +296,7 @@ Its transfer code (you only need it for the terminal test, because the stick car
 | `STOP: apt couldn't install the packages` with `held broken packages` or `gir1.2-adw-1` | The base is too old (libadwaita under 1.2), e.g. Ubuntu 22.04. | Stop. Tell the user. |
 | `STOP: apt-get update failed` | No network or broken apt sources inside the image. | Fix the image's network/sources (that's your build, not the kit), then rerun. If unsure, ask. |
 | `STOP: the packages in install-into-image/ are damaged` | The `.deb` files were changed or partly copied. | Get a fresh copy of the kit from the user. Don't download the packages elsewhere. |
-| `FAIL … is version X, but Cherry OS uses Y` | A different version was installed. | Reinstall with `install-cherry-apps.sh`. |
+| `FAIL … is version X, but Cherry OS uses Y` | An older version was installed. | Reinstall with `install-cherry-apps.sh`. |
 | `FAIL cherry-move-app is installed` or `FAIL cherry-desktop is installed` | The wrong package went in. | `apt-get purge` it in the image, then rerun the check. |
 | `FAIL /… differs from Cherry OS's copy` or `is missing` | Something changed or removed an installed file. | Find what in your build changed it, undo that, reinstall. |
 | `FAIL … timer isn't enabled` | The package's setup step was skipped. | `chroot <image root> systemctl enable cherry-store-self-update.timer` |

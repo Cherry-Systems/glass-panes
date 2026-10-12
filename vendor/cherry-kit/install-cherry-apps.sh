@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs Cherry Move and the Cherry Store into your OS image: the same 1.0.6 packages Cherry OS 1.0.6 ships.
+# Installs Cherry Move and the Cherry Store into your OS image: the same 1.0.20 packages Cherry OS 1.0.20 ships.
 #   cherry-move          Cherry Move, identical to Cherry OS's
 #   cherry-store-client  the Cherry Store: the same code Cherry OS has in its cherry-desktop package, without
 #                        Cherry OS's other apps
@@ -11,7 +11,7 @@ set -euo pipefail
 root="${1:?usage: sudo $0 CHROOT}"
 root="$(realpath "$root")"
 kit="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-debs=(cherry-move_1.0.6_all.deb cherry-store-client_1.0.6_all.deb)
+debs=(cherry-move_1.0.20_all.deb cherry-store-client_1.0.20_all.deb)
 
 stop() {
   printf '\nSTOP: %s\n' "$*" >&2
@@ -27,7 +27,7 @@ stop() {
   stop "$root has no apt and dpkg. Cherry Move and the Cherry Store only install on Debian 12+, Ubuntu 24.04+ and
 their derivatives (Linux Mint 22+, Pop!_OS 24.04+, ...)."
 os="$(. "$root/etc/os-release" 2>/dev/null && echo "${PRETTY_NAME:-unknown}")"
-echo "Installing Cherry Move and the Cherry Store 1.0.6 into $root ($os)"
+echo "Installing Cherry Move and the Cherry Store 1.0.20 into $root ($os)"
 
 in_root() { if [[ $root == / ]]; then "$@"; else chroot "$root" "$@"; fi; }
 mounted=()
