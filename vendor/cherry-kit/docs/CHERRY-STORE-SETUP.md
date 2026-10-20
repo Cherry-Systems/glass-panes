@@ -9,16 +9,10 @@ script instead of the steps in section 3. It installs the same `cherry-store-cli
 OS ships, and its check script confirms the files match.
 
 The short version: install the Cherry Store app package into the image, then check that
-`cherry search` lists `hello-cherry`. Everything else here is detail. The package's newest
-version is always at:
-
-```
-https://cherry-cloud.isaiahcannings.workers.dev/download/cherry-store.deb
-```
-
-That's the same package ordinary users download from the Cherry Store website,
-https://cherry-systems.github.io/store/. Once installed, the app
-keeps itself up to date.
+`cherry search` lists `hello-cherry`. Everything else here is detail. This kit already
+includes that package in `install-into-image/`. Ordinary users get apps from the Cherry
+Store website, https://cherry-systems.github.io/store/. Once installed, the app keeps
+itself up to date.
 
 ---
 
@@ -49,7 +43,7 @@ keeps itself up to date.
 - **Publishing:**
   - Anyone with a GitHub account can publish (`cherry publish --github`).
   - So can anyone with a Cherry account (`cherry publish --cherry`). That route goes through
-    Cherry Cloud, a small web service at `https://cherry-cloud.isaiahcannings.workers.dev`.
+    Cherry Cloud, the store's web service.
   - Both routes end in the same GitHub Actions workflow, which checks the upload, scans it and
     adds it to `index.json`.
 
@@ -104,15 +98,16 @@ the copy you were given. To rebuild it from the Cherry OS source, run
 Install it inside the image's chroot like any local package:
 
 ```sh
-wget -O cherry-store.deb https://cherry-cloud.isaiahcannings.workers.dev/download/cherry-store.deb
+# Use the cherry-store-client package shipped in install-into-image/.
+deb=install-into-image/cherry-store-client_*_all.deb
 
 # debootstrap / mmdebstrap / a chroot you control:
-cp cherry-store.deb "$CHROOT/tmp/"
+cp $deb "$CHROOT/tmp/cherry-store.deb"
 chroot "$CHROOT" apt-get install -y /tmp/cherry-store.deb
 rm "$CHROOT/tmp/cherry-store.deb"
 
 # live-build: drop the file in config/packages.chroot/ and it's installed automatically
-cp cherry-store.deb config/packages.chroot/
+cp $deb config/packages.chroot/
 ```
 
 It pulls in everything it needs, including the GTK packages for the graphical app. Its install
@@ -187,8 +182,8 @@ Files use `KEY=value` lines:
 | `REPO` / `CHERRY_STORE_REPO` | `Cherry-Systems/cherry-store` | Where `cherry publish --github` and `cherry yank --github` open their requests. |
 
 Cherry Cloud's address is set separately, with `CLOUD_URL=` in `~/.config/cherry/cloud.conf` or
-`/etc/cherry/cloud.conf`, or the environment variable `CHERRY_CLOUD_URL`. It defaults to
-`https://cherry-cloud.isaiahcannings.workers.dev`.
+`/etc/cherry/cloud.conf`, or the environment variable `CHERRY_CLOUD_URL`. The package
+uses the official Cherry Cloud address; you only set this to run a store of your own.
 
 Put system-wide settings in `/etc/cherry/*.conf`, not in environment variables.
 

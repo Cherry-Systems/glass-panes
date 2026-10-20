@@ -7,6 +7,11 @@ light, fast, free of adverts and bloatware, and never restarts itself for update
 
 No Microsoft logos, Edge or Copilot: Glass Panes has its own logo and artwork.
 
+Download the PC install image: [glasspanes-1.0-amd64.iso](https://github.com/Cherry-Systems/glass-panes/releases/download/v1.0/glasspanes-1.0-amd64.iso)
+(SHA-256 `f8b8dfa293f46564d4828188755aa37dd8b0c710bfdb7c26a570ca7188288eeb`).
+Write it to a USB stick and boot from it. The product page is
+https://cherry-systems.github.io/products/glass-panes/.
+
 ## What's in it
 
 | Windows | Glass Panes |

@@ -59,7 +59,7 @@ class Users(QStandardItemModel):
 
     def __init__(self, n):
         super().__init__()
-        for name, real in [("isaiah", "Isaiah"), ("guest", "Guest")][:n]:
+        for name, real in [("sam", "Sam"), ("guest", "Guest")][:n]:
             it = QStandardItem()
             it.setData(name, self.NAME)
             it.setData(real, self.REAL)
